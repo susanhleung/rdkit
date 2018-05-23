@@ -100,6 +100,8 @@ add_subdirectory(Wrap)
 rdkit_test(graphmolTest1 test1.cpp LINK_LIBRARIES FileParsers SmilesParse GraphMol
 RDGeometryLib RDGeneral SubstructMatch ForceFieldHelpers ForceField)
 
+add_subdirectory(MolStandardize)
+
 rdkit_test(graphmolcpTest cptest.cpp LINK_LIBRARIES  SmilesParse GraphMol RDGeometryLib RDGeneral)
 
 rdkit_test(graphmolqueryTest querytest.cpp LINK_LIBRARIES SubstructMatch SmilesParse GraphMol RDGeometryLib RDGeneral)
