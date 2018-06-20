@@ -1265,7 +1265,7 @@ void EmbeddedFrag::computeDistMat(DOUBLE_SMART_PTR &dmat) {
   INT_EATOM_MAP_I efi, efj;
   RDGeom::Point2D pti, ptj;
 
-  INT_EATOM_MAP_I tempi = d_eatoms.begin();
+  auto tempi = d_eatoms.begin();
   tempi++;
   double *dmatPtr = dmat.get();
   for (efi = tempi; efi != d_eatoms.end(); efi++) {
@@ -1290,11 +1290,11 @@ double EmbeddedFrag::mimicDistMatAndDensityCostFunc(
   if (dmat) {
     ddata = dmat->get();
   } else {
-    ddata = 0;
+    ddata = nullptr;
   }
   unsigned int na = dp_mol->getNumAtoms();
   unsigned int dsize = na * (na - 1) / 2;
-  double *ddata2D = new double[dsize];
+  auto *ddata2D = new double[dsize];
   DOUBLE_SMART_PTR dmat2D(ddata2D);
   this->computeDistMat(dmat2D);
   double res1 = 0.0;
@@ -1403,7 +1403,7 @@ void EmbeddedFrag::randomSampleFlipsAndPermutations(
         bool allin = true;
         for (RDKit::INT_VECT_CI ivci = aids.begin(); ivci != aids.end();
              ivci++) {
-          INT_EATOM_MAP_I nbrIter = d_eatoms.find(*ivci);
+          auto nbrIter = d_eatoms.find(*ivci);
           if (nbrIter == d_eatoms.end() || nbrIter->second.df_fixed) {
             allin = false;
             break;
@@ -1605,7 +1605,7 @@ void _recurseDegTwoRingAtoms(unsigned int aid, const RDKit::ROMol *mol,
   int bondId;
   RDKit::INT_VECT nbrs;
   while (atomBonds.first != atomBonds.second) {
-    const RDKit::BOND_SPTR bnd = (*mol)[*atomBonds.first];
+    const RDKit::Bond *bnd = (*mol)[*atomBonds.first];
     bondId = bnd->getIdx();
     if (mol->getRingInfo()->numBondRings(bondId)) {
       nbrs.push_back(bnd->getOtherAtomIdx(aid));
@@ -1675,8 +1675,8 @@ void EmbeddedFrag::flipAboutBond(unsigned int bondId, bool flipEnd) {
   // look for fixed atoms in the fragment:
   unsigned int nEndAtomsFixed = 0;
   unsigned int nAtomsFixed = 0;
-  for (INT_EATOM_MAP_I efi = d_eatoms.begin(); efi != d_eatoms.end(); efi++) {
-    if (efi->second.df_fixed) ++nAtomsFixed;
+  for (auto &d_eatom : d_eatoms) {
+    if (d_eatom.second.df_fixed) ++nAtomsFixed;
   }
   // if there are fixed atoms, look at the atoms on the "end side"
   if (nAtomsFixed) {
@@ -1693,20 +1693,20 @@ void EmbeddedFrag::flipAboutBond(unsigned int bondId, bool flipEnd) {
   bool endSideFlip = true;
   if (nEndAtomsFixed) {
     endSideFlip = false;
-    // if there are fixed atoms on both sides, just return
-    if (nAtomsFixed > endSideFlip) return;
+    // there are fixed atoms on both sides, just return
+    return;
   } else {
-    int nats = d_eatoms.size();
-    int nEndSide = endSideAids.size();
+    size_t nats = d_eatoms.size();
+    size_t nEndSide = endSideAids.size();
     if ((nats - nEndSide) < nEndSide) {
       endSideFlip = false;
     }
   }
-  for (INT_EATOM_MAP_I efi = d_eatoms.begin(); efi != d_eatoms.end(); efi++) {
+  for (auto &d_eatom : d_eatoms) {
     RDKit::INT_VECT_CI fii = std::find(endSideAids.begin(), endSideAids.end(),
-                                       static_cast<int>(efi->first));
+                                       static_cast<int>(d_eatom.first));
     if (endSideFlip ^ (fii == endSideAids.end())) {
-      efi->second.Reflect(begLoc, endLoc);
+      d_eatom.second.Reflect(begLoc, endLoc);
     }
   }
 }

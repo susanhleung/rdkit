@@ -40,14 +40,14 @@ std::string molToSVG(const ROMol &mol, unsigned int width, unsigned int height,
                      unsigned int lineWidthMult, unsigned int fontSize,
                      bool includeAtomCircles, int confId) {
   RDUNUSED_PARAM(kekulize);
-  rdk_auto_ptr<std::vector<int> > highlightAtoms =
+  std::unique_ptr<std::vector<int>> highlightAtoms =
       pythonObjectToVect(pyHighlightAtoms, static_cast<int>(mol.getNumAtoms()));
   std::stringstream outs;
   MolDraw2DSVG drawer(width, height, outs);
   drawer.setFontSize(fontSize / 24.);
   drawer.setLineWidth(drawer.lineWidth() * lineWidthMult);
   drawer.drawOptions().circleAtoms = includeAtomCircles;
-  drawer.drawMolecule(mol, highlightAtoms.get(), NULL, NULL, confId);
+  drawer.drawMolecule(mol, highlightAtoms.get(), nullptr, nullptr, confId);
   drawer.finishDrawing();
   return outs.str();
 }
@@ -57,22 +57,22 @@ python::tuple fragmentOnSomeBondsHelper(const ROMol &mol,
                                         python::object pyDummyLabels,
                                         python::object pyBondTypes,
                                         bool returnCutsPerAtom) {
-  rdk_auto_ptr<std::vector<unsigned int> > bondIndices =
+  std::unique_ptr<std::vector<unsigned int>> bondIndices =
       pythonObjectToVect(pyBondIndices, mol.getNumBonds());
   if (!bondIndices.get()) throw_value_error("empty bond indices");
 
-  std::vector<std::pair<unsigned int, unsigned int> > *dummyLabels = 0;
+  std::vector<std::pair<unsigned int, unsigned int>> *dummyLabels = nullptr;
   if (pyDummyLabels) {
     unsigned int nVs =
         python::extract<unsigned int>(pyDummyLabels.attr("__len__")());
-    dummyLabels = new std::vector<std::pair<unsigned int, unsigned int> >(nVs);
+    dummyLabels = new std::vector<std::pair<unsigned int, unsigned int>>(nVs);
     for (unsigned int i = 0; i < nVs; ++i) {
       unsigned int v1 = python::extract<unsigned int>(pyDummyLabels[i][0]);
       unsigned int v2 = python::extract<unsigned int>(pyDummyLabels[i][1]);
       (*dummyLabels)[i] = std::make_pair(v1, v2);
     }
   }
-  std::vector<Bond::BondType> *bondTypes = 0;
+  std::vector<Bond::BondType> *bondTypes = nullptr;
   if (pyBondTypes) {
     unsigned int nVs =
         python::extract<unsigned int>(pyBondTypes.attr("__len__")());
@@ -84,9 +84,9 @@ python::tuple fragmentOnSomeBondsHelper(const ROMol &mol,
       (*bondTypes)[i] = python::extract<Bond::BondType>(pyBondTypes[i]);
     }
   }
-  std::vector<std::vector<unsigned int> > *cutsPerAtom = 0;
+  std::vector<std::vector<unsigned int>> *cutsPerAtom = nullptr;
   if (returnCutsPerAtom) {
-    cutsPerAtom = new std::vector<std::vector<unsigned int> >;
+    cutsPerAtom = new std::vector<std::vector<unsigned int>>;
   }
 
   std::vector<ROMOL_SPTR> frags;
@@ -94,17 +94,17 @@ python::tuple fragmentOnSomeBondsHelper(const ROMol &mol,
                                      addDummies, dummyLabels, bondTypes,
                                      cutsPerAtom);
   python::list res;
-  for (unsigned int i = 0; i < frags.size(); ++i) {
-    res.append(frags[i]);
+  for (auto &frag : frags) {
+    res.append(frag);
   }
   delete dummyLabels;
   delete bondTypes;
   if (cutsPerAtom) {
     python::list pyCutsPerAtom;
-    for (unsigned int i = 0; i < cutsPerAtom->size(); ++i) {
+    for (auto &cut : *cutsPerAtom) {
       python::list localL;
       for (unsigned int j = 0; j < mol.getNumAtoms(); ++j) {
-        localL.append((*cutsPerAtom)[i][j]);
+        localL.append(cut[j]);
       }
       pyCutsPerAtom.append(python::tuple(localL));
     }
@@ -130,21 +130,21 @@ ROMol *fragmentOnBondsHelper(const ROMol &mol, python::object pyBondIndices,
                              bool addDummies, python::object pyDummyLabels,
                              python::object pyBondTypes,
                              python::list pyCutsPerAtom) {
-  rdk_auto_ptr<std::vector<unsigned int> > bondIndices =
+  std::unique_ptr<std::vector<unsigned int>> bondIndices =
       pythonObjectToVect(pyBondIndices, mol.getNumBonds());
   if (!bondIndices.get()) throw_value_error("empty bond indices");
-  std::vector<std::pair<unsigned int, unsigned int> > *dummyLabels = 0;
+  std::vector<std::pair<unsigned int, unsigned int>> *dummyLabels = nullptr;
   if (pyDummyLabels) {
     unsigned int nVs =
         python::extract<unsigned int>(pyDummyLabels.attr("__len__")());
-    dummyLabels = new std::vector<std::pair<unsigned int, unsigned int> >(nVs);
+    dummyLabels = new std::vector<std::pair<unsigned int, unsigned int>>(nVs);
     for (unsigned int i = 0; i < nVs; ++i) {
       unsigned int v1 = python::extract<unsigned int>(pyDummyLabels[i][0]);
       unsigned int v2 = python::extract<unsigned int>(pyDummyLabels[i][1]);
       (*dummyLabels)[i] = std::make_pair(v1, v2);
     }
   }
-  std::vector<Bond::BondType> *bondTypes = 0;
+  std::vector<Bond::BondType> *bondTypes = nullptr;
   if (pyBondTypes) {
     unsigned int nVs =
         python::extract<unsigned int>(pyBondTypes.attr("__len__")());
@@ -156,7 +156,7 @@ ROMol *fragmentOnBondsHelper(const ROMol &mol, python::object pyBondIndices,
       (*bondTypes)[i] = python::extract<Bond::BondType>(pyBondTypes[i]);
     }
   }
-  std::vector<unsigned int> *cutsPerAtom = 0;
+  std::vector<unsigned int> *cutsPerAtom = nullptr;
   if (pyCutsPerAtom) {
     cutsPerAtom = new std::vector<unsigned int>;
     unsigned int nAts =
@@ -186,7 +186,7 @@ ROMol *renumberAtomsHelper(const ROMol &mol, python::object &pyNewOrder) {
       mol.getNumAtoms()) {
     throw_value_error("atomCounts shorter than the number of atoms");
   }
-  rdk_auto_ptr<std::vector<unsigned int> > newOrder =
+  std::unique_ptr<std::vector<unsigned int>> newOrder =
       pythonObjectToVect(pyNewOrder, mol.getNumAtoms());
   ROMol *res = MolOps::renumberAtoms(mol, *newOrder);
   return res;
@@ -210,7 +210,7 @@ std::string getChainId(const ROMol &m, const Atom *at) {
 }
 python::dict splitMolByPDBResidues(const ROMol &mol, python::object pyWhiteList,
                                    bool negateList) {
-  std::vector<std::string> *whiteList = NULL;
+  std::vector<std::string> *whiteList = nullptr;
   if (pyWhiteList) {
     unsigned int nVs =
         python::extract<unsigned int>(pyWhiteList.attr("__len__")());
@@ -219,13 +219,13 @@ python::dict splitMolByPDBResidues(const ROMol &mol, python::object pyWhiteList,
       (*whiteList)[i] = python::extract<std::string>(pyWhiteList[i]);
     }
   }
-  std::map<std::string, boost::shared_ptr<ROMol> > res =
+  std::map<std::string, boost::shared_ptr<ROMol>> res =
       MolOps::getMolFragsWithQuery(mol, getResidue, false, whiteList,
                                    negateList);
   delete whiteList;
 
   python::dict pyres;
-  for (std::map<std::string, boost::shared_ptr<ROMol> >::const_iterator iter =
+  for (std::map<std::string, boost::shared_ptr<ROMol>>::const_iterator iter =
            res.begin();
        iter != res.end(); ++iter) {
     pyres[iter->first] = iter->second;
@@ -234,7 +234,7 @@ python::dict splitMolByPDBResidues(const ROMol &mol, python::object pyWhiteList,
 }
 python::dict splitMolByPDBChainId(const ROMol &mol, python::object pyWhiteList,
                                   bool negateList) {
-  std::vector<std::string> *whiteList = NULL;
+  std::vector<std::string> *whiteList = nullptr;
   if (pyWhiteList) {
     unsigned int nVs =
         python::extract<unsigned int>(pyWhiteList.attr("__len__")());
@@ -243,13 +243,13 @@ python::dict splitMolByPDBChainId(const ROMol &mol, python::object pyWhiteList,
       (*whiteList)[i] = python::extract<std::string>(pyWhiteList[i]);
     }
   }
-  std::map<std::string, boost::shared_ptr<ROMol> > res =
+  std::map<std::string, boost::shared_ptr<ROMol>> res =
       MolOps::getMolFragsWithQuery(mol, getChainId, false, whiteList,
                                    negateList);
   delete whiteList;
 
   python::dict pyres;
-  for (std::map<std::string, boost::shared_ptr<ROMol> >::const_iterator iter =
+  for (std::map<std::string, boost::shared_ptr<ROMol>>::const_iterator iter =
            res.begin();
        iter != res.end(); ++iter) {
     pyres[iter->first] = iter->second;
@@ -268,7 +268,7 @@ python::dict parseQueryDefFileHelper(python::object &input, bool standardize,
     parseQueryDefFile(get_filename(), queryDefs, standardize, delimiter,
                       comment, nameColumn, smartsColumn);
   } else {
-    streambuf *sb = new streambuf(input);
+    auto *sb = new streambuf(input);
     std::istream *istr = new streambuf::istream(*sb);
     parseQueryDefFile(istr, queryDefs, standardize, delimiter, comment,
                       nameColumn, smartsColumn);
@@ -302,11 +302,12 @@ void addRecursiveQueriesHelper(ROMol &mol, python::dict replDict,
 
 ROMol *addHs(const ROMol &orig, bool explicitOnly, bool addCoords,
              python::object onlyOnAtoms, bool addResidueInfo) {
-  rdk_auto_ptr<std::vector<unsigned int> > onlyOn;
+  std::unique_ptr<std::vector<unsigned int>> onlyOn;
   if (onlyOnAtoms) {
     onlyOn = pythonObjectToVect(onlyOnAtoms, orig.getNumAtoms());
   }
-  ROMol *res = MolOps::addHs(orig, explicitOnly, addCoords, onlyOn.get(), addResidueInfo);
+  ROMol *res = MolOps::addHs(orig, explicitOnly, addCoords, onlyOn.get(),
+                             addResidueInfo);
   return res;
 }
 int getSSSR(ROMol &mol) {
@@ -335,7 +336,7 @@ void addRecursiveQuery(ROMol &mol, const ROMol &query, unsigned int atomIdx,
   if (atomIdx >= mol.getNumAtoms()) {
     throw_value_error("atom index exceeds mol.GetNumAtoms()");
   }
-  RecursiveStructureQuery *q = new RecursiveStructureQuery(new ROMol(query));
+  auto *q = new RecursiveStructureQuery(new ROMol(query));
 
   Atom *oAt = mol.getAtomWithIdx(atomIdx);
   if (!oAt->hasQuery()) {
@@ -357,6 +358,10 @@ MolOps::SanitizeFlags sanitizeMol(ROMol &mol, boost::uint64_t sanitizeOps,
   if (catchErrors) {
     try {
       MolOps::sanitizeMol(wmol, operationThatFailed, sanitizeOps);
+    } catch ( const MolSanitizeException &e){
+      // this really should not be necessary, but at some point it
+      // started to be required with VC++17. Doesn't seem like it does
+      // any harm.
     } catch (...) {
     }
   } else {
@@ -412,7 +417,7 @@ VECT_INT_VECT getSymmSSSR(ROMol &mol) {
 }
 PyObject *getDistanceMatrix(ROMol &mol, bool useBO = false,
                             bool useAtomWts = false, bool force = false,
-                            const char *prefix = 0) {
+                            const char *prefix = nullptr) {
   int nats = mol.getNumAtoms();
   npy_intp dims[2];
   dims[0] = nats;
@@ -430,7 +435,7 @@ PyObject *getDistanceMatrix(ROMol &mol, bool useBO = false,
 }
 PyObject *get3DDistanceMatrix(ROMol &mol, int confId = -1,
                               bool useAtomWts = false, bool force = false,
-                              const char *prefix = 0) {
+                              const char *prefix = nullptr) {
   int nats = mol.getNumAtoms();
   npy_intp dims[2];
   dims[0] = nats;
@@ -448,7 +453,7 @@ PyObject *get3DDistanceMatrix(ROMol &mol, int confId = -1,
 }
 
 PyObject *getAdjacencyMatrix(ROMol &mol, bool useBO = false, int emptyVal = 0,
-                             bool force = false, const char *prefix = 0) {
+                             bool force = false, const char *prefix = nullptr) {
   int nats = mol.getNumAtoms();
   npy_intp dims[2];
   dims[0] = nats;
@@ -475,9 +480,10 @@ PyObject *getAdjacencyMatrix(ROMol &mol, bool useBO = false, int emptyVal = 0,
   return PyArray_Return(res);
 }
 
-python::tuple GetMolFragsWithMapping(const ROMol &mol,
-  bool asMols, bool sanitizeFrags, python::object frags = python::object(),
-  python::object fragsMolAtomMapping = python::object()) {
+python::tuple GetMolFragsWithMapping(
+    const ROMol &mol, bool asMols, bool sanitizeFrags,
+    python::object frags = python::object(),
+    python::object fragsMolAtomMapping = python::object()) {
   python::list res;
 
   if (!asMols) {
@@ -492,17 +498,20 @@ python::tuple GetMolFragsWithMapping(const ROMol &mol,
       res.append(python::tuple(tpl));
     }
   } else {
-    std::vector<std::vector<int> > fragsMolAtomMappingVec;
+    std::vector<std::vector<int>> fragsMolAtomMappingVec;
     std::vector<int> fragsVec;
-    std::vector<boost::shared_ptr<ROMol> > molFrags;
+    std::vector<boost::shared_ptr<ROMol>> molFrags;
     python::list &fragsList = reinterpret_cast<python::list &>(frags);
-    python::list &fragsMolAtomMappingList = reinterpret_cast<python::list &>(fragsMolAtomMapping);
+    python::list &fragsMolAtomMappingList =
+        reinterpret_cast<python::list &>(fragsMolAtomMapping);
     bool hasFrags = fragsList != python::object();
     bool hasFragsMolAtomMapping = fragsMolAtomMappingList != python::object();
-    molFrags = hasFrags || hasFragsMolAtomMapping
-      ? MolOps::getMolFrags(mol, sanitizeFrags, hasFrags ? &fragsVec : NULL,
-      hasFragsMolAtomMapping ? &fragsMolAtomMappingVec : NULL)
-      : MolOps::getMolFrags(mol, sanitizeFrags);
+    molFrags =
+        hasFrags || hasFragsMolAtomMapping
+            ? MolOps::getMolFrags(
+                  mol, sanitizeFrags, hasFrags ? &fragsVec : NULL,
+                  hasFragsMolAtomMapping ? &fragsMolAtomMappingVec : NULL)
+            : MolOps::getMolFrags(mol, sanitizeFrags);
     if (hasFrags) {
       for (unsigned int i = 0; i < fragsVec.size(); ++i)
         fragsList.append(fragsVec[i]);
@@ -515,8 +524,7 @@ python::tuple GetMolFragsWithMapping(const ROMol &mol,
         fragsMolAtomMappingList.append(python::tuple(perFragMolAtomMappingTpl));
       }
     }
-    for (unsigned int i = 0; i < molFrags.size(); ++i)
-      res.append(molFrags[i]);
+    for (unsigned int i = 0; i < molFrags.size(); ++i) res.append(molFrags[i]);
   }
   return python::tuple(res);
 }
@@ -530,9 +538,9 @@ ExplicitBitVect *wrapLayeredFingerprint(
     unsigned int maxPath, unsigned int fpSize, python::list atomCounts,
     ExplicitBitVect *includeOnlyBits, bool branchedPaths,
     python::object fromAtoms) {
-  rdk_auto_ptr<std::vector<unsigned int> > lFromAtoms =
+  std::unique_ptr<std::vector<unsigned int>> lFromAtoms =
       pythonObjectToVect(fromAtoms, mol.getNumAtoms());
-  std::vector<unsigned int> *atomCountsV = 0;
+  std::vector<unsigned int> *atomCountsV = nullptr;
   if (atomCounts) {
     atomCountsV = new std::vector<unsigned int>;
     unsigned int nAts =
@@ -563,7 +571,7 @@ ExplicitBitVect *wrapLayeredFingerprint(
 ExplicitBitVect *wrapPatternFingerprint(const ROMol &mol, unsigned int fpSize,
                                         python::list atomCounts,
                                         ExplicitBitVect *includeOnlyBits) {
-  std::vector<unsigned int> *atomCountsV = 0;
+  std::vector<unsigned int> *atomCountsV = nullptr;
   if (atomCounts) {
     atomCountsV = new std::vector<unsigned int>;
     unsigned int nAts =
@@ -596,19 +604,19 @@ ExplicitBitVect *wrapRDKFingerprintMol(
     double tgtDensity, unsigned int minSize, bool branchedPaths,
     bool useBondOrder, python::object atomInvariants, python::object fromAtoms,
     python::object atomBits, python::object bitInfo) {
-  rdk_auto_ptr<std::vector<unsigned int> > lAtomInvariants =
+  std::unique_ptr<std::vector<unsigned int>> lAtomInvariants =
       pythonObjectToVect<unsigned int>(atomInvariants);
-  rdk_auto_ptr<std::vector<unsigned int> > lFromAtoms =
+  std::unique_ptr<std::vector<unsigned int>> lFromAtoms =
       pythonObjectToVect(fromAtoms, mol.getNumAtoms());
-  std::vector<std::vector<boost::uint32_t> > *lAtomBits = 0;
-  std::map<boost::uint32_t, std::vector<std::vector<int> > > *lBitInfo = 0;
+  std::vector<std::vector<boost::uint32_t>> *lAtomBits = nullptr;
+  std::map<boost::uint32_t, std::vector<std::vector<int>>> *lBitInfo = nullptr;
   // if(!(atomBits.is_none())){
   if (atomBits != python::object()) {
     lAtomBits =
-        new std::vector<std::vector<boost::uint32_t> >(mol.getNumAtoms());
+        new std::vector<std::vector<boost::uint32_t>>(mol.getNumAtoms());
   }
   if (bitInfo != python::object()) {
-    lBitInfo = new std::map<boost::uint32_t, std::vector<std::vector<int> > >;
+    lBitInfo = new std::map<boost::uint32_t, std::vector<std::vector<int>>>;
   }
   ExplicitBitVect *res;
   res = RDKit::RDKFingerprintMol(mol, minPath, maxPath, fpSize, nBitsPerHash,
@@ -627,20 +635,18 @@ ExplicitBitVect *wrapRDKFingerprintMol(
   }
   if (lBitInfo) {
     python::dict &pyd = static_cast<python::dict &>(bitInfo);
-    typedef std::map<boost::uint32_t, std::vector<std::vector<int> > >::iterator
-        it_type;
-    for (it_type it = (*lBitInfo).begin(); it != (*lBitInfo).end(); ++it) {
+    for (auto &it : (*lBitInfo)) {
       python::list temp;
-      std::vector<std::vector<int> >::iterator itset;
-      for (itset = it->second.begin(); itset != it->second.end(); ++itset) {
+      std::vector<std::vector<int>>::iterator itset;
+      for (itset = it.second.begin(); itset != it.second.end(); ++itset) {
         python::list temp2;
-        for (unsigned int i = 0; i < itset->size(); ++i) {
-          temp2.append(itset->at(i));
+        for (int &i : *itset) {
+          temp2.append(i);
         }
         temp.append(temp2);
       }
-      if (!pyd.has_key(it->first)) {
-        pyd[it->first] = temp;
+      if (!pyd.has_key(it.first)) {
+        pyd[it.first] = temp;
       }
     }
     delete lBitInfo;
@@ -653,20 +659,20 @@ SparseIntVect<boost::uint64_t> *wrapUnfoldedRDKFingerprintMol(
     const ROMol &mol, unsigned int minPath, unsigned int maxPath, bool useHs,
     bool branchedPaths, bool useBondOrder, python::object atomInvariants,
     python::object fromAtoms, python::object atomBits, python::object bitInfo) {
-  rdk_auto_ptr<std::vector<unsigned int> > lAtomInvariants =
+  std::unique_ptr<std::vector<unsigned int>> lAtomInvariants =
       pythonObjectToVect<unsigned int>(atomInvariants);
-  rdk_auto_ptr<std::vector<unsigned int> > lFromAtoms =
+  std::unique_ptr<std::vector<unsigned int>> lFromAtoms =
       pythonObjectToVect(fromAtoms, mol.getNumAtoms());
-  std::vector<std::vector<boost::uint64_t> > *lAtomBits = 0;
-  std::map<boost::uint64_t, std::vector<std::vector<int> > > *lBitInfo = 0;
+  std::vector<std::vector<boost::uint64_t>> *lAtomBits = nullptr;
+  std::map<boost::uint64_t, std::vector<std::vector<int>>> *lBitInfo = nullptr;
 
   // if(!(atomBits.is_none())){
   if (atomBits != python::object()) {
     lAtomBits =
-        new std::vector<std::vector<boost::uint64_t> >(mol.getNumAtoms());
+        new std::vector<std::vector<boost::uint64_t>>(mol.getNumAtoms());
   }
   if (bitInfo != python::object()) {
-    lBitInfo = new std::map<boost::uint64_t, std::vector<std::vector<int> > >;
+    lBitInfo = new std::map<boost::uint64_t, std::vector<std::vector<int>>>;
   }
 
   SparseIntVect<boost::uint64_t> *res;
@@ -685,20 +691,18 @@ SparseIntVect<boost::uint64_t> *wrapUnfoldedRDKFingerprintMol(
   }
   if (lBitInfo) {
     python::dict &pyd = static_cast<python::dict &>(bitInfo);
-    typedef std::map<boost::uint64_t, std::vector<std::vector<int> > >::iterator
-        it_type;
-    for (it_type it = (*lBitInfo).begin(); it != (*lBitInfo).end(); ++it) {
+    for (auto &it : (*lBitInfo)) {
       python::list temp;
-      std::vector<std::vector<int> >::iterator itset;
-      for (itset = it->second.begin(); itset != it->second.end(); ++itset) {
+      std::vector<std::vector<int>>::iterator itset;
+      for (itset = it.second.begin(); itset != it.second.end(); ++itset) {
         python::list temp2;
-        for (unsigned int i = 0; i < itset->size(); ++i) {
-          temp2.append(itset->at(i));
+        for (int &i : *itset) {
+          temp2.append(i);
         }
         temp.append(temp2);
       }
-      if (!pyd.has_key(it->first)) {
-        pyd[it->first] = temp;
+      if (!pyd.has_key(it.first)) {
+        pyd[it.first] = temp;
       }
     }
     delete lBitInfo;
@@ -722,8 +726,8 @@ python::object findAllSubgraphsOfLengthsMtoNHelper(const ROMol &mol,
   for (unsigned int i = lowerLen; i <= upperLen; ++i) {
     python::list tmp;
     const PATH_LIST &pth = oMap[i];
-    for (PATH_LIST_CI pthit = pth.begin(); pthit != pth.end(); ++pthit) {
-      tmp.append(python::tuple(*pthit));
+    for (const auto &pthit : pth) {
+      tmp.append(python::tuple(pthit));
     }
     res.append(tmp);
   }
@@ -977,9 +981,18 @@ struct molops_wrapper {
   NOTES:\n\
 \n\
     - The original molecule is *not* modified.\n\
+    - Hydrogens which aren't connected to a heavy atom will not be\n\
+      removed.  This prevents molecules like [H][H] from having\n\
+      all atoms removed.\n\
+    - Labelled hydrogen (e.g. atoms with atomic number=1, but isotope > 1),\n\
+      will not be removed.\n\
+    - two coordinate Hs, like the central H in C[H-]C, will not be removed\n\
+    - Hs connected to dummy atoms will not be removed\n\
+    - Hs that are part of the definition of double bond Stereochemistry\n\
+      will not be removed\n\
 \n";
     python::def("RemoveHs",
-                (ROMol * (*)(const ROMol &, bool, bool, bool)) MolOps::removeHs,
+                (ROMol * (*)(const ROMol &, bool, bool, bool))MolOps::removeHs,
                 (python::arg("mol"), python::arg("implicitOnly") = false,
                  python::arg("updateExplicitCount") = false,
                  python::arg("sanitize") = true),
@@ -1231,6 +1244,7 @@ struct molops_wrapper {
         .value("AROMATICITY_DEFAULT", MolOps::AROMATICITY_DEFAULT)
         .value("AROMATICITY_RDKIT", MolOps::AROMATICITY_RDKIT)
         .value("AROMATICITY_SIMPLE", MolOps::AROMATICITY_SIMPLE)
+        .value("AROMATICITY_MDL", MolOps::AROMATICITY_MDL)
         .value("AROMATICITY_CUSTOM", MolOps::AROMATICITY_CUSTOM)
         .export_values();
 
@@ -1544,7 +1558,9 @@ struct molops_wrapper {
     - mol: the molecule to use\n\
     - cleanIt: (optional) if provided, atoms with a chiral specifier that aren't\n\
       actually chiral (e.g. atoms with duplicate substituents or only 2 substituents,\n\
-      etc.) will have their chiral code set to CHI_UNSPECIFIED\n\
+      etc.) will have their chiral code set to CHI_UNSPECIFIED. Bonds with \n\
+      STEREOCIS/STEREOTRANS specified that have duplicate substituents based upon the CIP \n\
+      atom ranks will be marked STEREONONE. \n\
     - force: (optional) causes the calculation to be repeated, even if it has already\n\
       been done\n\
     - flagPossibleStereoCenters (optional)   set the _ChiralityPossible property on\n\
@@ -1799,7 +1815,7 @@ ARGUMENTS:\n\
          python::arg("minPath") = 1, python::arg("maxPath") = 7,
          python::arg("fpSize") = 2048,
          python::arg("atomCounts") = python::list(),
-         python::arg("setOnlyBits") = (ExplicitBitVect *)0,
+         python::arg("setOnlyBits") = (ExplicitBitVect *)nullptr,
          python::arg("branchedPaths") = true, python::arg("fromAtoms") = 0),
         docString.c_str(),
         python::return_value_policy<python::manage_new_object>());
@@ -1817,7 +1833,7 @@ ARGUMENTS:\n\
     python::def("PatternFingerprint", wrapPatternFingerprint,
                 (python::arg("mol"), python::arg("fpSize") = 2048,
                  python::arg("atomCounts") = python::list(),
-                 python::arg("setOnlyBits") = (ExplicitBitVect *)0),
+                 python::arg("setOnlyBits") = (ExplicitBitVect *)nullptr),
                 docString.c_str(),
                 python::return_value_policy<python::manage_new_object>());
 
@@ -1828,9 +1844,24 @@ ARGUMENTS:\n\
   ARGUMENTS:\n\
 \n\
     - molecule: the molecule to update\n\
+    - conformer: the conformer to use to determine wedge direction\n\
 \n\
 \n";
     python::def("WedgeMolBonds", WedgeMolBonds, docString.c_str());
+
+    docString =
+        "Set the wedging on an individual bond from a molecule.\n\
+   The wedging scheme used is that from Mol files.\n\
+\n\
+  ARGUMENTS:\n\
+\n\
+    - bond: the bond to update\n\
+    - atom ID: the atom from which to do the wedging\n\
+    - conformer: the conformer to use to determine wedge direction\n\
+\n\
+\n";
+    python::def("WedgeBond", WedgeBond, docString.c_str());
+
 
     // ------------------------------------------------------------------------
     docString =
@@ -2000,7 +2031,7 @@ EXAMPLES:\n\
 \n\
 \n";
     python::def("ReplaceCore", (ROMol * (*)(const ROMol &, const ROMol &, bool,
-                                            bool, bool, bool)) replaceCore,
+                                            bool, bool, bool))replaceCore,
                 (python::arg("mol"), python::arg("coreQuery"),
                  python::arg("replaceDummies") = true,
                  python::arg("labelByIndex") = false,

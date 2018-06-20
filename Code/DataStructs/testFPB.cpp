@@ -7,6 +7,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/test.h>
 #include <RDGeneral/Invariant.h>
 #include <RDGeneral/RDLog.h>
 #include <RDGeneral/Exceptions.h>
@@ -571,17 +572,17 @@ void testGithub1118() {
   pathName += "/Code/DataStructs/testData/";
   {
     std::string filename = pathName + "zim.head100.fpb";
-    FPBReader *fps = new FPBReader(filename);
+    auto *fps = new FPBReader(filename);
     delete fps;
   }
   {
-    FPBReader *fps = new FPBReader();
+    auto *fps = new FPBReader();
     delete fps;
   }
   {
     std::string filename = pathName + "zim.head100.fpb";
     std::ifstream ifs(filename.c_str());
-    FPBReader *fps = new FPBReader(&ifs, false);
+    auto *fps = new FPBReader(&ifs, false);
     delete fps;
   }
   BOOST_LOG(rdInfoLog) << "Finished" << std::endl;

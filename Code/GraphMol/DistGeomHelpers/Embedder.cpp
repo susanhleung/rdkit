@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2004-2017 Greg Landrum and Rational Discovery LLC
+//  Copyright (C) 2004-2018 Greg Landrum and Rational Discovery LLC
 //
 //   @@ All Rights Reserved @@
 //  This file is part of the RDKit.
@@ -33,6 +33,10 @@
 #include <boost/dynamic_bitset.hpp>
 #include <iomanip>
 #include <RDGeneral/RDThreads.h>
+
+#ifdef RDK_THREADSAFE_SSS
+#include <future>
+#endif
 
 //#define DEBUG_EMBEDDING 1
 
@@ -270,12 +274,12 @@ bool _boundsFulfilled(const std::vector<int> &atoms,
 bool _minimizeWithExpTorsions(
     RDGeom::PointPtrVect &positions, DistGeom::BoundsMatPtr mmat,
     double optimizerForceTol, double basinThresh,
-    const std::vector<std::pair<int, int> > &bonds,
-    const std::vector<std::vector<int> > &angles,
-    const std::vector<std::vector<int> > &expTorsionAtoms,
-    const std::vector<std::pair<std::vector<int>, std::vector<double> > >
+    const std::vector<std::pair<int, int>> &bonds,
+    const std::vector<std::vector<int>> &angles,
+    const std::vector<std::vector<int>> &expTorsionAtoms,
+    const std::vector<std::pair<std::vector<int>, std::vector<double>>>
         &expTorsionAngles,
-    const std::vector<std::vector<int> > &improperAtoms,
+    const std::vector<std::vector<int>> &improperAtoms,
     const std::vector<int> &atomNums, bool useBasicKnowledge) {
   RDUNUSED_PARAM(basinThresh);
 
@@ -283,9 +287,9 @@ bool _minimizeWithExpTorsions(
 
   // convert to 3D positions and create coordMap
   RDGeom::Point3DPtrVect positions3D;
-  for (unsigned int p = 0; p < positions.size(); ++p) {
-    positions3D.push_back(new RDGeom::Point3D(
-        (*positions[p])[0], (*positions[p])[1], (*positions[p])[2]));
+  for (auto &position : positions) {
+    positions3D.push_back(
+        new RDGeom::Point3D((*position)[0], (*position)[1], (*position)[2]));
   }
 
   // create the force field
@@ -352,12 +356,12 @@ bool _embedPoints(
     const DistGeom::VECT_CHIRALSET *chiralCenters,
     const DistGeom::VECT_CHIRALSET *tetrahedralCarbons, bool enforceChirality,
     bool useExpTorsionAnglePrefs, bool useBasicKnowledge,
-    const std::vector<std::pair<int, int> > &bonds,
-    const std::vector<std::vector<int> > &angles,
-    const std::vector<std::vector<int> > &expTorsionAtoms,
-    const std::vector<std::pair<std::vector<int>, std::vector<double> > >
+    const std::vector<std::pair<int, int>> &bonds,
+    const std::vector<std::vector<int>> &angles,
+    const std::vector<std::vector<int>> &expTorsionAtoms,
+    const std::vector<std::pair<std::vector<int>, std::vector<double>>>
         &expTorsionAngles,
-    const std::vector<std::vector<int> > &improperAtoms,
+    const std::vector<std::vector<int>> &improperAtoms,
     const std::vector<int> &atomNums) {
   unsigned int nat = positions->size();
   if (maxIterations == 0) {
@@ -371,10 +375,11 @@ bool _embedPoints(
   // conformations for large flexible molecules
   if (useRandomCoords) basinThresh = 1e8;
 
-  RDKit::double_source_type *rng = 0;
+  RDKit::double_source_type *rng = nullptr;
   RDKit::rng_type *generator;
   RDKit::uniform_double *distrib;
-  CHECK_INVARIANT(seed >= -1, "random seed must either be positive, zero, or negative one");
+  CHECK_INVARIANT(seed >= -1,
+                  "random seed must either be positive, zero, or negative one");
   if (seed > -1) {
     generator = new RDKit::rng_type(42u);
     generator->seed(seed);
@@ -413,7 +418,7 @@ bool _embedPoints(
     if (gotCoords) {
       boost::scoped_ptr<ForceFields::ForceField> field(
           DistGeom::constructForceField(*mmat, *positions, *chiralCenters, 1.0,
-                                        0.1, 0, basinThresh));
+                                        0.1, nullptr, basinThresh));
       unsigned int nPasses = 0;
       field->initialize();
       // std::cerr << "FIELD E: " << field->calcEnergy() << std::endl;
@@ -507,7 +512,7 @@ bool _embedPoints(
       if (gotCoords && (chiralCenters->size() > 0 || useRandomCoords)) {
         boost::scoped_ptr<ForceFields::ForceField> field2(
             DistGeom::constructForceField(*mmat, *positions, *chiralCenters,
-                                          0.2, 1.0, 0, basinThresh));
+                                          0.2, 1.0, nullptr, basinThresh));
         field2->initialize();
         // std::cerr<<"FIELD2 E: "<<field2->calcEnergy()<<std::endl;
         if (field2->calcEnergy() > ERROR_TOL) {
@@ -621,12 +626,12 @@ void _findChiralSets(const ROMol &mol, DistGeom::VECT_CHIRALSET &chiralCenters,
         // volume
         if (chiralType == Atom::CHI_TETRAHEDRAL_CCW) {
           // postive chiral volume
-          DistGeom::ChiralSet *cset = new DistGeom::ChiralSet(
+          auto *cset = new DistGeom::ChiralSet(
               (*ati)->getIdx(), nbrs[0], nbrs[1], nbrs[2], nbrs[3], 5.0, 100.0);
           DistGeom::ChiralSetPtr cptr(cset);
           chiralCenters.push_back(cptr);
         } else if (chiralType == Atom::CHI_TETRAHEDRAL_CW) {
-          DistGeom::ChiralSet *cset =
+          auto *cset =
               new DistGeom::ChiralSet((*ati)->getIdx(), nbrs[0], nbrs[1],
                                       nbrs[2], nbrs[3], -100.0, -5.0);
           DistGeom::ChiralSetPtr cptr(cset);
@@ -641,7 +646,7 @@ void _findChiralSets(const ROMol &mol, DistGeom::VECT_CHIRALSET &chiralCenters,
             // the coordMap
             // there's no sense doing 3-rings because those are a nightmare
           } else {
-            DistGeom::ChiralSet *cset = new DistGeom::ChiralSet(
+            auto *cset = new DistGeom::ChiralSet(
                 (*ati)->getIdx(), nbrs[0], nbrs[1], nbrs[2], nbrs[3], 0.0, 0.0);
             DistGeom::ChiralSetPtr cptr(cset);
             tetrahedralCenters.push_back(cptr);
@@ -708,12 +713,11 @@ void adjustBoundsMatFromCoordMap(
   //   std::cerr<<std::endl;
   // }
   // std::cerr<<std::endl;
-  for (std::map<int, RDGeom::Point3D>::const_iterator iIt = coordMap->begin();
-       iIt != coordMap->end(); ++iIt) {
+  for (auto iIt = coordMap->begin(); iIt != coordMap->end(); ++iIt) {
     int iIdx = iIt->first;
     const RDGeom::Point3D &iPoint = iIt->second;
 
-    std::map<int, RDGeom::Point3D>::const_iterator jIt = iIt;
+    auto jIt = iIt;
     while (++jIt != coordMap->end()) {
       int jIdx = jIt->first;
       const RDGeom::Point3D &jPoint = jIt->second;
@@ -753,22 +757,20 @@ typedef struct {
   bool enforceChirality;
   bool useExpTorsionAnglePrefs;
   bool useBasicKnowledge;
-  std::vector<std::pair<int, int> > *bonds;
-  std::vector<std::vector<int> > *angles;
-  std::vector<std::vector<int> > *expTorsionAtoms;
-  std::vector<std::pair<std::vector<int>, std::vector<double> > >
+  std::vector<std::pair<int, int>> *bonds;
+  std::vector<std::vector<int>> *angles;
+  std::vector<std::vector<int>> *expTorsionAtoms;
+  std::vector<std::pair<std::vector<int>, std::vector<double>>>
       *expTorsionAngles;
-  std::vector<std::vector<int> > *improperAtoms;
+  std::vector<std::vector<int>> *improperAtoms;
   std::vector<int> *atomNums;
 } EmbedArgs;
 
-template<class T>
+template <class T>
 bool multiplication_overflows_(T a, T b) {
   // a * b > c if and only if a > c / b
-  if (a == 0 || b == 0)
-    return false;
-  if (a > std::numeric_limits<T>::max() / b)
-    return true;
+  if (a == 0 || b == 0) return false;
+  if (a > std::numeric_limits<T>::max() / b) return true;
   return false;
 }
 
@@ -790,7 +792,9 @@ void embedHelper_(int threadId, int numThreads, EmbedArgs *eargs) {
       continue;
     }
 
-    CHECK_INVARIANT(eargs->seed >= -1, "random seed must either be positive, zero, or negative one");
+    CHECK_INVARIANT(
+        eargs->seed >= -1,
+        "random seed must either be positive, zero, or negative one");
     int new_seed = eargs->seed;
     if (new_seed > -1) {
       if (!multiplication_overflows_(rdcast<int>(ci + 1), eargs->seed)) {
@@ -815,7 +819,8 @@ void embedHelper_(int threadId, int numThreads, EmbedArgs *eargs) {
         new_seed = rdcast<int>(folded_num & positive_int_mask);
       }
     }
-    CHECK_INVARIANT(new_seed >= -1, "Something went wrong calculating a new seed");
+    CHECK_INVARIANT(new_seed >= -1,
+                    "Something went wrong calculating a new seed");
 
     bool gotCoords = _embedPoints(
         &positions, eargs->mmat, eargs->useRandomCoords, eargs->boxSizeMult,
@@ -869,7 +874,7 @@ void EmbedMultipleConfs(ROMol &mol, INT_VECT &res, unsigned int numConfs,
            "does "
            "not work with molecules that have multiple fragments."
         << std::endl;
-    coordMap = 0;
+    coordMap = nullptr;
   }
   std::vector<Conformer *> confs;
   confs.reserve(numConfs);
@@ -887,17 +892,17 @@ void EmbedMultipleConfs(ROMol &mol, INT_VECT &res, unsigned int numConfs,
   for (unsigned int fragIdx = 0; fragIdx < molFrags.size(); ++fragIdx) {
     ROMOL_SPTR piece = molFrags[fragIdx];
     unsigned int nAtoms = piece->getNumAtoms();
-    DistGeom::BoundsMatrix *mat = new DistGeom::BoundsMatrix(nAtoms);
+    auto *mat = new DistGeom::BoundsMatrix(nAtoms);
     DistGeom::BoundsMatPtr mmat(mat);
     initBoundsMat(mmat);
 
     double tol = 0.0;
-    std::vector<std::vector<int> > expTorsionAtoms;
-    std::vector<std::pair<std::vector<int>, std::vector<double> > >
+    std::vector<std::vector<int>> expTorsionAtoms;
+    std::vector<std::pair<std::vector<int>, std::vector<double>>>
         expTorsionAngles;
-    std::vector<std::vector<int> > improperAtoms;
-    std::vector<std::pair<int, int> > bonds;
-    std::vector<std::vector<int> > angles;
+    std::vector<std::vector<int>> improperAtoms;
+    std::vector<std::pair<int, int>> bonds;
+    std::vector<std::vector<int>> angles;
     std::vector<int> atomNums(nAtoms);
     if (params.useExpTorsionAnglePrefs || params.useBasicKnowledge) {
       ForceFields::CrystalFF::getExperimentalTorsions(
@@ -966,7 +971,7 @@ void EmbedMultipleConfs(ROMol &mol, INT_VECT &res, unsigned int numConfs,
       fourD = true;
     }
 #ifdef RDK_THREADSAFE_SSS
-    boost::thread_group tg;
+    std::vector<std::future<void>> tg;
 #endif
     int numThreads = getNumThreadsToUse(params.numThreads);
 
@@ -1001,10 +1006,12 @@ void EmbedMultipleConfs(ROMol &mol, INT_VECT &res, unsigned int numConfs,
 #ifdef RDK_THREADSAFE_SSS
     else {
       for (int tid = 0; tid < numThreads; ++tid) {
-        tg.add_thread(
-            new boost::thread(detail::embedHelper_, tid, numThreads, &eargs));
+        tg.emplace_back(std::async(std::launch::async, detail::embedHelper_,
+                                   tid, numThreads, &eargs));
       }
-      tg.join_all();
+      for (auto &fut : tg) {
+        fut.get();
+      }
     }
 #endif
   }

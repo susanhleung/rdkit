@@ -8,6 +8,7 @@
 //  of the RDKit source tree.
 //
 
+#include <RDBoost/test.h>
 #include <RDGeneral/Invariant.h>
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/FileParsers/MolSupplier.h>
@@ -18,8 +19,6 @@
 #include <fstream>
 
 #include <GraphMol/Descriptors/PBF.h>
-
-
 
 void test1(){
   BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;

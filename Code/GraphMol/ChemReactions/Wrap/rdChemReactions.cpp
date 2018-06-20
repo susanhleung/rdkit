@@ -1,6 +1,5 @@
-// $Id$
 //
-//  Copyright (c) 2007-2014, Novartis Institutes for BioMedical Research Inc.
+//  Copyright (c) 2007-2018, Novartis Institutes for BioMedical Research Inc.
 //  All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,6 +29,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
+#include <GraphMol/MolPickler.h>
+#include <GraphMol/Wrap/props.hpp>
 #include <RDBoost/python.h>
 #include <GraphMol/ChemReactions/Reaction.h>
 #include <GraphMol/ChemReactions/ReactionPickler.h>
@@ -41,6 +42,7 @@
 #include <GraphMol/FilterCatalog/FunctionalGroupHierarchy.h>
 
 #include <RDBoost/Wrap.h>
+
 #include <RDGeneral/Exceptions.h>
 #include <GraphMol/SanitException.h>
 #include <RDGeneral/FileParseException.h>
@@ -64,12 +66,17 @@ void rdChemicalReactionExceptionTranslator(
 }
 
 namespace RDKit {
-python::object ReactionToBinary(const ChemicalReaction &self) {
+python::object ReactionToBinaryWithProps(const ChemicalReaction &self,
+                                         unsigned int props) {
   std::string res;
-  ReactionPickler::pickleReaction(self, res);
+  ReactionPickler::pickleReaction(self, res, props);
   python::object retval = python::object(
       python::handle<>(PyBytes_FromStringAndSize(res.c_str(), res.length())));
   return retval;
+}
+python::object ReactionToBinary(const ChemicalReaction &self) {
+  return ReactionToBinaryWithProps(self,
+                                   MolPickler::getDefaultPickleProperties());
 }
 //
 // allows reactions to be pickled.
@@ -150,7 +157,7 @@ ROMol *GetProductTemplate(const ChemicalReaction *self, unsigned int which) {
   if (which >= self->getNumProductTemplates()) {
     throw_value_error("requested template index too high");
   }
-  MOL_SPTR_VECT::const_iterator iter = self->beginProductTemplates();
+  auto iter = self->beginProductTemplates();
   iter += which;
   ROMol *res = const_cast<ROMol *>(iter->get());
   return res;
@@ -159,7 +166,7 @@ ROMol *GetReactantTemplate(const ChemicalReaction *self, unsigned int which) {
   if (which >= self->getNumReactantTemplates()) {
     throw_value_error("requested template index too high");
   }
-  MOL_SPTR_VECT::const_iterator iter = self->beginReactantTemplates();
+  auto iter = self->beginReactantTemplates();
   iter += which;
   ROMol *res = const_cast<ROMol *>(iter->get());
   return res;
@@ -168,7 +175,7 @@ ROMol *GetAgentTemplate(const ChemicalReaction *self, unsigned int which) {
   if (which >= self->getNumAgentTemplates()) {
     throw_value_error("requested template index too high");
   }
-  MOL_SPTR_VECT::const_iterator iter = self->beginAgentTemplates();
+  auto iter = self->beginAgentTemplates();
   iter += which;
   ROMol *res = const_cast<ROMol *>(iter->get());
   return res;
@@ -187,8 +194,8 @@ void RemoveUnmappedReactantTemplates(ChemicalReaction *self,
                                           moveToAgentTemplates, &tmp);
     python::list molList = python::extract<python::list>(targetList);
     if (tmp.size() > 0) {
-      for (unsigned int i = 0; i < tmp.size(); i++) {
-        molList.append(tmp.at(i));
+      for (auto &i : tmp) {
+        molList.append(i);
       }
     }
   }
@@ -207,8 +214,8 @@ void RemoveUnmappedProductTemplates(ChemicalReaction *self,
                                          moveToAgentTemplates, &tmp);
     python::list molList = python::extract<python::list>(targetList);
     if (tmp.size() > 0) {
-      for (unsigned int i = 0; i < tmp.size(); i++) {
-        molList.append(tmp.at(i));
+      for (auto &i : tmp) {
+        molList.append(i);
       }
     }
   }
@@ -222,8 +229,8 @@ void RemoveAgentTemplates(ChemicalReaction &self, python::object targetList) {
     self.removeAgentTemplates(&tmp);
     python::list molList = python::extract<python::list>(targetList);
     if (tmp.size() > 0) {
-      for (unsigned int i = 0; i < tmp.size(); i++) {
-        molList.append(tmp[i]);
+      for (auto &i : tmp) {
+        molList.append(i);
       }
     }
   }
@@ -282,8 +289,8 @@ python::object GetReactingAtoms(const ChemicalReaction &self,
                                 bool mappedAtomsOnly) {
   python::list res;
   VECT_INT_VECT rAs = getReactingAtoms(self, mappedAtomsOnly);
-  for (VECT_INT_VECT_I rIt = rAs.begin(); rIt != rAs.end(); ++rIt) {
-    res.append(python::tuple(*rIt));
+  for (auto &rA : rAs) {
+    res.append(python::tuple(rA));
   }
   return python::tuple(res);
 }
@@ -304,17 +311,17 @@ python::object AddRecursiveQueriesToReaction(ChemicalReaction &self,
   }
 
   if (getLabels) {
-    std::vector<std::vector<std::pair<unsigned int, std::string> > > labels;
+    std::vector<std::vector<std::pair<unsigned int, std::string>>> labels;
     addRecursiveQueriesToReaction(self, queries, propName, &labels);
 
     // transform labels into python::tuple(python::tuple(python::tuple))
     python::list reactantLabels;
-    for (unsigned int i = 0; i < labels.size(); ++i) {
+    for (auto &label : labels) {
       python::list tmpLabels;
-      for (unsigned int j = 0; j < labels[i].size(); ++j) {
+      for (auto &j : label) {
         python::list tmpPair;
-        tmpPair.append(labels[i][j].first);
-        tmpPair.append(labels[i][j].second);
+        tmpPair.append(j.first);
+        tmpPair.append(j.second);
         tmpLabels.append(python::tuple(tmpPair));
       }
       reactantLabels.append(python::tuple(tmpLabels));
@@ -329,18 +336,15 @@ python::object AddRecursiveQueriesToReaction(ChemicalReaction &self,
 python::object PreprocessReaction(ChemicalReaction &reaction,
                                   python::dict queryDict,
                                   std::string propName) {
-
   // transform dictionary into map
   std::map<std::string, ROMOL_SPTR> queries;
-  unsigned int size = python::extract<unsigned int>(queryDict.keys().attr("__len__")());
+  unsigned int size =
+      python::extract<unsigned int>(queryDict.keys().attr("__len__")());
   if (!size) {
     const bool normalized = true;
     queries = GetFlattenedFunctionalGroupHierarchy(normalized);
-  }
-  else {
-    for (unsigned int i = 0;
-         i < size;
-         ++i) {
+  } else {
+    for (unsigned int i = 0; i < size; ++i) {
       ROMol *m = python::extract<ROMol *>(queryDict.values()[i]);
       ROMOL_SPTR nm(new ROMol(*m));
       std::string k = python::extract<std::string>(queryDict.keys()[i]);
@@ -350,50 +354,44 @@ python::object PreprocessReaction(ChemicalReaction &reaction,
 
   unsigned int nReactants = reaction.getNumReactantTemplates();
   unsigned int nProducts = reaction.getNumProductTemplates();
-  unsigned int nWarn,nError;
+  unsigned int nWarn, nError;
   reaction.validate(nWarn, nError);
-  std::vector<
-    std::vector<std::pair<unsigned int,std::string> > > labels;
+  std::vector<std::vector<std::pair<unsigned int, std::string>>> labels;
 
   if (!nError) {
-      preprocessReaction(reaction, nWarn, nError, labels, queries, propName);
+    preprocessReaction(reaction, nWarn, nError, labels, queries, propName);
   }
 
   // transform labels into python::tuple(python::tuple(python::tuple))
   python::list reactantLabels;
-  for (unsigned int i = 0; i < labels.size(); ++i) {
+  for (auto &label : labels) {
     python::list tmpLabels;
-    for (unsigned int j = 0; j < labels[i].size(); ++j) {
+    for (auto &j : label) {
       python::list tmpPair;
-      tmpPair.append(labels[i][j].first);
-      tmpPair.append(labels[i][j].second);
+      tmpPair.append(j.first);
+      tmpPair.append(j.second);
       tmpLabels.append(python::tuple(tmpPair));
     }
     reactantLabels.append(python::tuple(tmpLabels));
   }
   return python::make_tuple(nWarn, nError, nReactants, nProducts,
                             python::tuple(reactantLabels));
-
 }
 
 typedef boost::uint64_t sanitize_ops;
 
 RxnOps::SanitizeRxnFlags sanitizeReaction(
-    ChemicalReaction &rxn,
-    sanitize_ops sanitizeOps,
-    const MolOps::AdjustQueryParameters &params,
-    bool catchErrors) {
+    ChemicalReaction &rxn, sanitize_ops sanitizeOps,
+    const MolOps::AdjustQueryParameters &params, bool catchErrors) {
   unsigned int operationsThatFailed = 0;
   try {
     RxnOps::sanitizeRxn(rxn, operationsThatFailed, sanitizeOps, params);
-  } catch(...) {
-    if (!catchErrors)
-      throw;
+  } catch (...) {
+    if (!catchErrors) throw;
   }
   return static_cast<RxnOps::SanitizeRxnFlags>(operationsThatFailed);
 }
 }
-
 
 void wrap_enumeration();
 
@@ -460,6 +458,7 @@ Sample Usage:\n\
     python::class_<RDKit::MOL_SPTR_VECT>("MOL_SPTR_VECT")
         .def(python::vector_indexing_suite<RDKit::MOL_SPTR_VECT, true>());
   }
+
   python::class_<RDKit::ChemicalReaction>(
       "ChemicalReaction", docString.c_str(),
       python::init<>("Constructor, takes no arguments"))
@@ -542,7 +541,10 @@ Sample Usage:\n\
            (python::arg("self")),
            "EXPERT USER: returns whether or not the reaction can have implicit "
            "properties")
-      .def("ToBinary", RDKit::ReactionToBinary,
+      .def("ToBinary", RDKit::ReactionToBinary, (python::arg("self")),
+           "Returns a binary string representation of the reaction.")
+      .def("ToBinary", RDKit::ReactionToBinaryWithProps,
+           (python::arg("self"), python::arg("propertyFlags")),
            "Returns a binary string representation of the reaction.")
       .def("IsMoleculeReactant", RDKit::IsMoleculeReactantOfReaction,
            "returns whether or not the molecule has a substructure match to "
@@ -573,6 +575,142 @@ Sample Usage:\n\
       .def("GetAgents", &RDKit::ChemicalReaction::getAgents,
            python::return_value_policy<python::reference_existing_object>(),
            "get the agent templates")
+
+      // properties
+      .def("SetProp", RDKit::MolSetProp<RDKit::ChemicalReaction, std::string>,
+           (python::arg("self"), python::arg("key"), python::arg("val"),
+            python::arg("computed") = false),
+           "Sets a molecular property\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to be set (a string).\n"
+           "    - value: the property value (a string).\n"
+           "    - computed: (optional) marks the property as being "
+           "computed.\n"
+           "                Defaults to False.\n\n")
+      .def("SetDoubleProp", RDKit::MolSetProp<RDKit::ChemicalReaction, double>,
+           (python::arg("self"), python::arg("key"), python::arg("val"),
+            python::arg("computed") = false),
+           "Sets a double valued molecular property\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to be set (a string).\n"
+           "    - value: the property value as a double.\n"
+           "    - computed: (optional) marks the property as being "
+           "computed.\n"
+           "                Defaults to 0.\n\n")
+      .def("SetIntProp", RDKit::MolSetProp<RDKit::ChemicalReaction, int>,
+           (python::arg("self"), python::arg("key"), python::arg("val"),
+            python::arg("computed") = false),
+           "Sets an integer valued molecular property\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to be set (an unsigned "
+           "number).\n"
+           "    - value: the property value as an integer.\n"
+           "    - computed: (optional) marks the property as being "
+           "computed.\n"
+           "                Defaults to False.\n\n")
+      .def("SetUnsignedProp",
+           RDKit::MolSetProp<RDKit::ChemicalReaction, unsigned int>,
+           (python::arg("self"), python::arg("key"), python::arg("val"),
+            python::arg("computed") = false),
+           "Sets an unsigned integer valued molecular property\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to be set (a string).\n"
+           "    - value: the property value as an unsigned integer.\n"
+           "    - computed: (optional) marks the property as being "
+           "computed.\n"
+           "                Defaults to False.\n\n")
+      .def("SetBoolProp", RDKit::MolSetProp<RDKit::ChemicalReaction, bool>,
+           (python::arg("self"), python::arg("key"), python::arg("val"),
+            python::arg("computed") = false),
+           "Sets a boolean valued molecular property\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to be set (a string).\n"
+           "    - value: the property value as a bool.\n"
+           "    - computed: (optional) marks the property as being "
+           "computed.\n"
+           "                Defaults to False.\n\n")
+      .def("HasProp", RDKit::MolHasProp<RDKit::ChemicalReaction>,
+           "Queries a molecule to see if a particular property has been "
+           "assigned.\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to check for (a string).\n")
+      .def("GetProp", RDKit::GetProp<RDKit::ChemicalReaction, std::string>,
+           "Returns the value of the property.\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to return (a string).\n\n"
+           "  RETURNS: a string\n\n"
+           "  NOTE:\n"
+           "    - If the property has not been set, a KeyError exception "
+           "will be raised.\n")
+      .def("GetDoubleProp", RDKit::GetProp<RDKit::ChemicalReaction, double>,
+           "Returns the double value of the property if possible.\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to return (a string).\n\n"
+           "  RETURNS: a double\n\n"
+           "  NOTE:\n"
+           "    - If the property has not been set, a KeyError exception "
+           "will be raised.\n")
+      .def("GetIntProp", RDKit::GetProp<RDKit::ChemicalReaction, int>,
+           "Returns the integer value of the property if possible.\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to return (a string).\n\n"
+           "  RETURNS: an integer\n\n"
+           "  NOTE:\n"
+           "    - If the property has not been set, a KeyError exception "
+           "will be raised.\n")
+      .def("GetUnsignedProp",
+           RDKit::GetProp<RDKit::ChemicalReaction, unsigned int>,
+           "Returns the unsigned int value of the property if possible.\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to return (a string).\n\n"
+           "  RETURNS: an unsigned integer\n\n"
+           "  NOTE:\n"
+           "    - If the property has not been set, a KeyError exception "
+           "will be raised.\n")
+      .def("GetBoolProp", RDKit::GetProp<RDKit::ChemicalReaction, bool>,
+           "Returns the Bool value of the property if possible.\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to return (a string).\n\n"
+           "  RETURNS: a bool\n\n"
+           "  NOTE:\n"
+           "    - If the property has not been set, a KeyError exception "
+           "will be raised.\n")
+      .def("ClearProp", RDKit::MolClearProp<RDKit::ChemicalReaction>,
+           "Removes a property from the reaction.\n\n"
+           "  ARGUMENTS:\n"
+           "    - key: the name of the property to clear (a string).\n")
+
+      .def("ClearComputedProps",
+           RDKit::MolClearComputedProps<RDKit::ChemicalReaction>,
+           "Removes all computed properties from the reaction.\n\n")
+
+      .def("GetPropNames", &RDKit::ChemicalReaction::getPropList,
+           (python::arg("self"), python::arg("includePrivate") = false,
+            python::arg("includeComputed") = false),
+           "Returns a tuple with all property names for this reaction.\n\n"
+           "  ARGUMENTS:\n"
+           "    - includePrivate: (optional) toggles inclusion of private "
+           "properties in the result set.\n"
+           "                      Defaults to 0.\n"
+           "    - includeComputed: (optional) toggles inclusion of computed "
+           "properties in the result set.\n"
+           "                      Defaults to 0.\n\n"
+           "  RETURNS: a tuple of strings\n")
+
+      .def("GetPropsAsDict", RDKit::GetPropsAsDict<RDKit::ChemicalReaction>,
+           (python::arg("self"), python::arg("includePrivate") = false,
+            python::arg("includeComputed") = false),
+           "Returns a dictionary populated with the reaction's properties.\n"
+           " n.b. Some properties are not able to be converted to python "
+           "types.\n\n"
+           "  ARGUMENTS:\n"
+           "    - includePrivate: (optional) toggles inclusion of private "
+           "properties in the result set.\n"
+           "                      Defaults to False.\n"
+           "    - includeComputed: (optional) toggles inclusion of computed "
+           "properties in the result set.\n"
+           "                      Defaults to False.\n\n"
+           "  RETURNS: a dictionary\n")
 
       // enable pickle support
       .def_pickle(RDKit::reaction_pickle_suite());
@@ -802,39 +940,45 @@ Sample Usage:\n\
   True\n\
 ";
 
-  python::def("PreprocessReaction", RDKit::PreprocessReaction,
-              (python::arg("reaction"),
-               python::arg("queries")=python::dict(),
-               python::arg("propName")=RDKit::common_properties::molFileValue),
-              docString.c_str());
+  python::def(
+      "PreprocessReaction", RDKit::PreprocessReaction,
+      (python::arg("reaction"), python::arg("queries") = python::dict(),
+       python::arg("propName") = RDKit::common_properties::molFileValue),
+      docString.c_str());
 
   python::enum_<RDKit::RxnOps::SanitizeRxnFlags>("SanitizeFlags")
-        .value("SANITIZE_NONE", RDKit::RxnOps::SANITIZE_NONE)
-        .value("SANITIZE_ATOM_MAPS", RDKit::RxnOps::SANITIZE_ATOM_MAPS)
-        .value("SANITIZE_RGROUP_NAMES", RDKit::RxnOps::SANITIZE_RGROUP_NAMES)
-        .value("SANITIZE_ADJUST_REACTANTS", RDKit::RxnOps::SANITIZE_ADJUST_REACTANTS)
-        .value("SANITIZE_MERGEHS", RDKit::RxnOps::SANITIZE_MERGEHS)
-        .value("SANITIZE_ALL", RDKit::RxnOps::SANITIZE_ALL)
-        .export_values();
-    ;
+      .value("SANITIZE_NONE", RDKit::RxnOps::SANITIZE_NONE)
+      .value("SANITIZE_ATOM_MAPS", RDKit::RxnOps::SANITIZE_ATOM_MAPS)
+      .value("SANITIZE_RGROUP_NAMES", RDKit::RxnOps::SANITIZE_RGROUP_NAMES)
+      .value("SANITIZE_ADJUST_REACTANTS",
+             RDKit::RxnOps::SANITIZE_ADJUST_REACTANTS)
+      .value("SANITIZE_MERGEHS", RDKit::RxnOps::SANITIZE_MERGEHS)
+      .value("SANITIZE_ALL", RDKit::RxnOps::SANITIZE_ALL)
+      .export_values();
+  ;
 
-    python::def("GetDefaultAdjustParams", RDKit::RxnOps::DefaultRxnAdjustParams,
-                "Returns the default adjustment parameters for reactant templates");
+  python::def(
+      "GetDefaultAdjustParams", RDKit::RxnOps::DefaultRxnAdjustParams,
+      "Returns the default adjustment parameters for reactant templates");
 
-    python::def("GetChemDrawRxnAdjustParams", RDKit::RxnOps::ChemDrawRxnAdjustParams,
-                "(deprecated, see MatchOnlyAtRgroupsAdjustParams)\n\tReturns the chemdraw style adjustment parameters for reactant templates");
+  python::def("GetChemDrawRxnAdjustParams",
+              RDKit::RxnOps::ChemDrawRxnAdjustParams,
+              "(deprecated, see MatchOnlyAtRgroupsAdjustParams)\n\tReturns the "
+              "chemdraw style adjustment parameters for reactant templates");
 
-    python::def("MatchOnlyAtRgroupsAdjustParams", RDKit::RxnOps::MatchOnlyAtRgroupsAdjustParams,
-                "Only match at the specified rgroup locations in the reactant templates");
+  python::def(
+      "MatchOnlyAtRgroupsAdjustParams",
+      RDKit::RxnOps::MatchOnlyAtRgroupsAdjustParams,
+      "Only match at the specified rgroup locations in the reactant templates");
 
-    std::string docstring = "feed me";
-    python::def(
-        "SanitizeRxn", RDKit::sanitizeReaction,
-        (python::arg("rxn"), python::arg("sanitizeOps") = rdcast<unsigned int>(RDKit::RxnOps::SANITIZE_ALL),
-         python::arg("params") = RDKit::RxnOps::DefaultRxnAdjustParams(),
-         python::arg("catchErrors") = false),
-        docString.c_str());
+  std::string docstring = "feed me";
+  python::def("SanitizeRxn", RDKit::sanitizeReaction,
+              (python::arg("rxn"),
+               python::arg("sanitizeOps") =
+                   rdcast<unsigned int>(RDKit::RxnOps::SANITIZE_ALL),
+               python::arg("params") = RDKit::RxnOps::DefaultRxnAdjustParams(),
+               python::arg("catchErrors") = false),
+              docString.c_str());
 
   wrap_enumeration();
-
 }

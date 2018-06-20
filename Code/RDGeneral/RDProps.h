@@ -1,3 +1,4 @@
+#include <RDBoost/export.h>
 #ifndef RDKIT_RDPROPS_H
 #define RDKIT_RDPROPS_H
 #include "Dict.h"
@@ -149,15 +150,12 @@ class RDProps {
   //! update the properties from another
   /*
     \param source    Source to update the properties from
-    \param preserve  Existing If true keep existing data, else override from the source
+    \param preserve  Existing If true keep existing data, else override from the
+    source
   */
-  void updateProps(const RDProps &source, bool preserveExisting=false) {
-    dp_props.update(source.getDict(), preserveExisting); 
+  void updateProps(const RDProps &source, bool preserveExisting = false) {
+    dp_props.update(source.getDict(), preserveExisting);
   }
-  
 };
-
-
-
 }
 #endif

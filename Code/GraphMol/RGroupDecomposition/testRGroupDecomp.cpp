@@ -28,6 +28,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
+#include <RDBoost/test.h>
 #include <RDGeneral/RDLog.h>
 #include <RDGeneral/utils.h>
 #include <GraphMol/RDKitBase.h>
@@ -47,9 +48,7 @@ void CHECK_RGROUP(RGroupRows::const_iterator &it, std::string expected,
   std::ostringstream str;
   int i = 0;
 
-  for (std::map<std::string, boost::shared_ptr<ROMol> >::const_iterator
-           rgroups = it->begin();
-       rgroups != it->end(); ++rgroups, ++i) {
+  for (auto rgroups = it->begin(); rgroups != it->end(); ++rgroups, ++i) {
     if (i) str << " ";
     // rlabel:smiles
     str << rgroups->first << ":" << MolToSmiles(*rgroups->second.get(), true);
@@ -67,11 +66,9 @@ void CHECK_RGROUP(RGroupRows::const_iterator &it, std::string expected,
 void DUMP_RGROUP(RGroupRows::const_iterator &it, std::string &result) {
   std::ostringstream str;
 
-  for (std::map<std::string, boost::shared_ptr<ROMol> >::const_iterator
-           rgroups = it->begin();
-       rgroups != it->end(); ++rgroups) {
+  for (const auto &rgroups : *it) {
     // rlabel:smiles
-    str << rgroups->first << "\t" << MolToSmiles(*rgroups->second.get(), true)
+    str << rgroups.first << "\t" << MolToSmiles(*rgroups.second.get(), true)
         << "\t";
   }
   std::cerr << str.str() << std::endl;
@@ -185,10 +182,10 @@ void testRingMatching() {
 const char *ringData2[3] = {"c1cocc1CCl", "c1c[nH]cc1CI", "c1cscc1CF"};
 
 const char *ringDataRes2[3] = {
-    "Core:[*]1[*][*][*:1](C[*:2])[*]1 R1:[H]c1oc([H])c([*:1])c1[H] R2:Cl[*:2]",
-    "Core:[*]1[*][*][*:1](C[*:2])[*]1 R1:[H]c1c([*:1])c([H])n([H])c1[H] "
+    "Core:*1**[*:1](C[*:2])*1 R1:[H]c1oc([H])c([*:1])c1[H] R2:Cl[*:2]",
+    "Core:*1**[*:1](C[*:2])*1 R1:[H]c1c([*:1])c([H])n([H])c1[H] "
     "R2:I[*:2]",
-    "Core:[*]1[*][*][*:1](C[*:2])[*]1 R1:[H]c1sc([H])c([*:1])c1[H] R2:F[*:2]"};
+    "Core:*1**[*:1](C[*:2])*1 R1:[H]c1sc([H])c([*:1])c1[H] R2:F[*:2]"};
 
 void testRingMatching2() {
   BOOST_LOG(rdInfoLog)
@@ -387,16 +384,13 @@ void testRemoveHs() {
 void testGitHubIssue1705() {
   BOOST_LOG(rdInfoLog)
       << "********************************************************\n";
-  BOOST_LOG(rdInfoLog)
-      << "test preferring grouping non hydrogens over hydrogens if possible"
-      << std::endl;
+  BOOST_LOG(rdInfoLog) << "test preferring grouping non hydrogens over hydrogens if possible" << std::endl;
 
   RWMol *core = SmilesToMol("Oc1ccccc1");
   RGroupDecompositionParameters params;
 
   RGroupDecomposition decomp(*core, params);
-  const char *smilesData[5] = {"Oc1ccccc1", "Oc1c(F)cccc1", "Oc1ccccc1F",
-                               "Oc1c(F)cc(N)cc1", "Oc1ccccc1Cl"};
+  const char *smilesData[5] = {"Oc1ccccc1","Oc1c(F)cccc1","Oc1ccccc1F","Oc1c(F)cc(N)cc1","Oc1ccccc1Cl"};
   for (int i = 0; i < 5; ++i) {
     ROMol *mol = SmilesToMol(smilesData[i]);
     int res = decomp.add(*mol);
@@ -407,21 +401,44 @@ void testGitHubIssue1705() {
   decomp.process();
   std::stringstream ss;
   RGroupColumns groups = decomp.getRGroupsAsColumns();
-  for (RGroupColumns::iterator iter = groups.begin(); iter != groups.end();
-       ++iter) {
-    ss << "Rgroup===" << iter->first << std::endl;
-    for (RGroupColumn::iterator citer = iter->second.begin();
-         citer != iter->second.end(); citer++) {
-      ss << MolToSmiles(*(*citer)) << std::endl;
+  for (auto &column : groups) {
+    ss << "Rgroup===" << column.first << std::endl;
+    for (auto &rgroup : column.second ) {
+      ss << MolToSmiles(*rgroup) << std::endl;
     }
   }
 
-  TEST_ASSERT(ss.str() ==
-              "Rgroup===Core\nOc1ccc([*:2])cc1[*:1]\nOc1ccc([*:2])cc1[*:1]"
-              "\nOc1ccc([*:2])cc1[*:1]\nOc1ccc([*:2])cc1[*:1]\nOc1ccc([*:2])"
-              "cc1[*:1]\nRgroup===R1\n[H][*:1]\nF[*:1]\nF[*:1]\nF[*:1]\nCl[*:1]"
-              "\nRgroup===R2\n[H][*:2]\n[H][*:2]\n[H][*:2]\n[H]N([H])[*:2]\n[H]"
-              "[*:2]\n");
+  TEST_ASSERT(ss.str() == "Rgroup===Core\nOc1ccc([*:2])cc1[*:1]\nOc1ccc([*:2])cc1[*:1]\nOc1ccc([*:2])cc1[*:1]\nOc1ccc([*:2])cc1[*:1]\nOc1ccc([*:2])cc1[*:1]\nRgroup===R1\n[H][*:1]\nF[*:1]\nF[*:1]\nF[*:1]\nCl[*:1]\nRgroup===R2\n[H][*:2]\n[H][*:2]\n[H][*:2]\n[H]N([H])[*:2]\n[H][*:2]\n");
+
+
+}
+
+void testMatchOnlyAtRgroupHs() {
+  BOOST_LOG(rdInfoLog)
+      << "********************************************************\n";
+  BOOST_LOG(rdInfoLog) << "test matching only rgroups but allows Hs" << std::endl;
+
+  RWMol *core = SmilesToMol("*OCC");
+  RGroupDecompositionParameters params;
+  params.onlyMatchAtRGroups = true;
+  RGroupDecomposition decomp(*core, params);
+  const char *smilesData[2] = {"OCC","COCC"};
+  for (int i = 0; i < 2; ++i) {
+    ROMol *mol = SmilesToMol(smilesData[i]);
+    int res = decomp.add(*mol);
+  }
+  decomp.process();
+
+  std::stringstream ss;
+  RGroupColumns groups = decomp.getRGroupsAsColumns();
+  for (auto &column : groups) {
+    ss << "Rgroup===" << column.first << std::endl;
+    for (auto &rgroup : column.second ) {
+      ss << MolToSmiles(*rgroup) << std::endl;
+    }
+  }
+  std::cerr << ss.str() << std::endl;
+  TEST_ASSERT(ss.str() == "Rgroup===Core\nCCO[*:1]\nCCO[*:1]\nRgroup===R1\n[H][*:1]\n[H]C([H])([H])[*:1]\n");
 }
 
 int main() {
@@ -443,7 +460,8 @@ int main() {
   testRemoveHs();
 
   testGitHubIssue1705();
-
+  testMatchOnlyAtRgroupHs();
+  
   BOOST_LOG(rdInfoLog)
       << "********************************************************\n";
   return 0;

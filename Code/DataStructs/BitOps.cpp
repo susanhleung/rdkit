@@ -21,6 +21,10 @@
 
 #include <boost/lexical_cast.hpp>
 
+#if _MSC_VER
+#include <intrin.h>
+#endif
+
 using namespace RDKit;
 
 int getBitId(const char*& text, int format, int size, int curr) {
@@ -159,9 +163,9 @@ bool AllProbeBitsMatch(const T1& probe, const std::string& pkl) {
   }
   return true;
 }
-template bool AllProbeBitsMatch(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT bool AllProbeBitsMatch(const SparseBitVect& bv1,
                                 const std::string& pkl);
-template bool AllProbeBitsMatch(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT bool AllProbeBitsMatch(const ExplicitBitVect& bv1,
                                 const std::string& pkl);
 template <typename T1>
 bool AllProbeBitsMatch(const T1& probe, const T1& ref) {
@@ -172,7 +176,7 @@ bool AllProbeBitsMatch(const T1& probe, const T1& ref) {
   }
   return true;
 }
-template bool AllProbeBitsMatch(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT bool AllProbeBitsMatch(const SparseBitVect& bv1,
                                 const SparseBitVect& bv2);
 // template bool AllProbeBitsMatch(const ExplicitBitVect& bv1,const
 // ExplicitBitVect &bv2);
@@ -193,7 +197,43 @@ int NumOnBitsInCommon(const T1& bv1, const T2& bv2) {
   return static_cast<int>(OnBitsInCommon(bv1, bv2).size());
 }
 
+namespace {
+struct bitset_impl {
+  std::vector<unsigned long> m_bits;
+  std::size_t m_num_bits;
+};
+
+const bool canUseBitmapHack =
+    sizeof(boost::dynamic_bitset<>) == sizeof(bitset_impl);
+
+bool EBVToBitmap(const ExplicitBitVect& bv, const unsigned char*& fp,
+                 unsigned int& nBytes) {
+  if (!canUseBitmapHack) return false;
+  const bitset_impl* p1 = (const bitset_impl*)(const void*)bv.dp_bits;
+  // Run-time sanity check (just in case)
+  if (p1->m_num_bits != bv.dp_bits->size()) {
+    return false;
+  }
+  fp = (const unsigned char*)p1->m_bits.data();
+  nBytes = (unsigned int)p1->m_num_bits / 8;
+  if (p1->m_num_bits % 8) ++nBytes;
+  return true;
+}
+}  // end of local namespace
+
+unsigned int CalcBitmapNumBitsInCommon(const unsigned char* afp,
+                                       const unsigned char* bfp,
+                                       unsigned int nBytes);
+
 int NumOnBitsInCommon(const ExplicitBitVect& bv1, const ExplicitBitVect& bv2) {
+  // Don't try this at home, we (hope we) know what we're doing
+  const unsigned char *afp, *bfp;
+  unsigned int nBytes;
+  if (EBVToBitmap(bv1, afp, nBytes) && EBVToBitmap(bv2, bfp, nBytes)) {
+    unsigned int result = CalcBitmapNumBitsInCommon(afp, bfp, nBytes);
+    return (int)result;
+  }
+
   return static_cast<int>(((*bv1.dp_bits) & (*bv2.dp_bits)).count());
 }
 
@@ -216,13 +256,10 @@ template <typename T1, typename T2>
 double TanimotoSimilarity(const T1& bv1, const T2& bv2) {
   if (bv1.getNumBits() != bv2.getNumBits())
     throw ValueErrorException("BitVects must be same length");
-  double x = NumOnBitsInCommon(bv1, bv2);
-  double y = bv1.getNumOnBits();
-  double z = bv2.getNumOnBits();
-  if ((y + z - x) == 0.0)
-    return 1.0;
-  else
-    return x / (y + z - x);
+  unsigned int total = bv1.getNumOnBits() + bv2.getNumOnBits();
+  if (total == 0) return 1.0;
+  unsigned int common = NumOnBitsInCommon(bv1, bv2);
+  return (double)common / (double)(total - common);
 }
 
 template <typename T1, typename T2>
@@ -426,7 +463,8 @@ int NumBitsInCommon(const T1& bv1, const T2& bv2) {
 }
 
 int NumBitsInCommon(const ExplicitBitVect& bv1, const ExplicitBitVect& bv2) {
-  return bv1.getNumBits() - static_cast<int>(((*bv1.dp_bits) ^ (*bv2.dp_bits)).count());
+  return bv1.getNumBits() -
+         static_cast<int>(((*bv1.dp_bits) ^ (*bv2.dp_bits)).count());
 }
 
 // """ -------------------------------------------------------
@@ -580,12 +618,12 @@ T1* FoldFingerprint(const T1& bv1, unsigned int factor) {
 
   int initSize = bv1.getNumBits();
   int resSize = initSize / factor;
-  T1* res = new T1(resSize);
+  auto* res = new T1(resSize);
 
   IntVect onBits;
   bv1.getOnBits(onBits);
-  for (IntVectIter iv = onBits.begin(); iv != onBits.end(); iv++) {
-    int pos = (*iv) % resSize;
+  for (int& onBit : onBits) {
+    int pos = onBit % resSize;
     res->setBit(pos);
   }
   return res;
@@ -659,7 +697,7 @@ void UpdateBitVectFromFPSText(T1& bv1, const std::string& fps) {
     try {
       tptr[0] = fps[i];
       tptr[1] = fps[i + 1];
-      c = static_cast<unsigned short>(strtol(tptr, NULL, 16));
+      c = static_cast<unsigned short>(strtol(tptr, nullptr, 16));
     } catch (...) {
       std::ostringstream errout;
       errout << "Cannot convert FPS word: " << fps.substr(i, 2) << " to int";
@@ -686,98 +724,98 @@ void UpdateBitVectFromBinaryText(T1& bv1, const std::string& fps) {
   }
 }
 
-template double TanimotoSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double TanimotoSimilarity(const SparseBitVect& bv1,
                                    const SparseBitVect& bv2);
-template double TverskySimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double TverskySimilarity(const SparseBitVect& bv1,
                                   const SparseBitVect& bv2, double a, double b);
-template double CosineSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double CosineSimilarity(const SparseBitVect& bv1,
                                  const SparseBitVect& bv2);
-template double KulczynskiSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double KulczynskiSimilarity(const SparseBitVect& bv1,
                                      const SparseBitVect& bv2);
-template double DiceSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double DiceSimilarity(const SparseBitVect& bv1,
                                const SparseBitVect& bv2);
-template double SokalSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double SokalSimilarity(const SparseBitVect& bv1,
                                 const SparseBitVect& bv2);
-template double McConnaugheySimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double McConnaugheySimilarity(const SparseBitVect& bv1,
                                        const SparseBitVect& bv2);
-template double AsymmetricSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double AsymmetricSimilarity(const SparseBitVect& bv1,
                                      const SparseBitVect& bv2);
-template double BraunBlanquetSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double BraunBlanquetSimilarity(const SparseBitVect& bv1,
                                         const SparseBitVect& bv2);
-template double RusselSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double RusselSimilarity(const SparseBitVect& bv1,
                                  const SparseBitVect& bv2);
-template double RogotGoldbergSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double RogotGoldbergSimilarity(const SparseBitVect& bv1,
                                         const SparseBitVect& bv2);
-template double OnBitSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double OnBitSimilarity(const SparseBitVect& bv1,
                                 const SparseBitVect& bv2);
-template int NumBitsInCommon(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT int NumBitsInCommon(const SparseBitVect& bv1,
                              const SparseBitVect& bv2);
-template double AllBitSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double AllBitSimilarity(const SparseBitVect& bv1,
                                  const SparseBitVect& bv2);
-template int NumOnBitsInCommon(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT int NumOnBitsInCommon(const SparseBitVect& bv1,
                                const SparseBitVect& bv2);
-template IntVect OnBitsInCommon(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT IntVect OnBitsInCommon(const SparseBitVect& bv1,
                                 const SparseBitVect& bv2);
-template IntVect OffBitsInCommon(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT IntVect OffBitsInCommon(const SparseBitVect& bv1,
                                  const SparseBitVect& bv2);
-template DoubleVect OnBitProjSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT DoubleVect OnBitProjSimilarity(const SparseBitVect& bv1,
                                         const SparseBitVect& bv2);
-template DoubleVect OffBitProjSimilarity(const SparseBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT DoubleVect OffBitProjSimilarity(const SparseBitVect& bv1,
                                          const SparseBitVect& bv2);
 
-template double TanimotoSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double TanimotoSimilarity(const ExplicitBitVect& bv1,
                                    const ExplicitBitVect& bv2);
-template double TverskySimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double TverskySimilarity(const ExplicitBitVect& bv1,
                                   const ExplicitBitVect& bv2, double a,
                                   double b);
-template double CosineSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double CosineSimilarity(const ExplicitBitVect& bv1,
                                  const ExplicitBitVect& bv2);
-template double KulczynskiSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double KulczynskiSimilarity(const ExplicitBitVect& bv1,
                                      const ExplicitBitVect& bv2);
-template double DiceSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double DiceSimilarity(const ExplicitBitVect& bv1,
                                const ExplicitBitVect& bv2);
-template double SokalSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double SokalSimilarity(const ExplicitBitVect& bv1,
                                 const ExplicitBitVect& bv2);
-template double McConnaugheySimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double McConnaugheySimilarity(const ExplicitBitVect& bv1,
                                        const ExplicitBitVect& bv2);
-template double AsymmetricSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double AsymmetricSimilarity(const ExplicitBitVect& bv1,
                                      const ExplicitBitVect& bv2);
-template double BraunBlanquetSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double BraunBlanquetSimilarity(const ExplicitBitVect& bv1,
                                         const ExplicitBitVect& bv2);
-template double RusselSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double RusselSimilarity(const ExplicitBitVect& bv1,
                                  const ExplicitBitVect& bv2);
-template double RogotGoldbergSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double RogotGoldbergSimilarity(const ExplicitBitVect& bv1,
                                         const ExplicitBitVect& bv2);
-template double OnBitSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double OnBitSimilarity(const ExplicitBitVect& bv1,
                                 const ExplicitBitVect& bv2);
-template int NumBitsInCommon(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT int NumBitsInCommon(const ExplicitBitVect& bv1,
                              const ExplicitBitVect& bv2);
-template double AllBitSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT double AllBitSimilarity(const ExplicitBitVect& bv1,
                                  const ExplicitBitVect& bv2);
-template IntVect OnBitsInCommon(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT IntVect OnBitsInCommon(const ExplicitBitVect& bv1,
                                 const ExplicitBitVect& bv2);
-template IntVect OffBitsInCommon(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT IntVect OffBitsInCommon(const ExplicitBitVect& bv1,
                                  const ExplicitBitVect& bv2);
-template DoubleVect OnBitProjSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT DoubleVect OnBitProjSimilarity(const ExplicitBitVect& bv1,
                                         const ExplicitBitVect& bv2);
-template DoubleVect OffBitProjSimilarity(const ExplicitBitVect& bv1,
+template RDKIT_DATASTRUCTS_EXPORT DoubleVect OffBitProjSimilarity(const ExplicitBitVect& bv1,
                                          const ExplicitBitVect& bv2);
 
-template SparseBitVect* FoldFingerprint(const SparseBitVect&, unsigned int);
-template ExplicitBitVect* FoldFingerprint(const ExplicitBitVect&, unsigned int);
+template RDKIT_DATASTRUCTS_EXPORT SparseBitVect* FoldFingerprint(const SparseBitVect&, unsigned int);
+template RDKIT_DATASTRUCTS_EXPORT ExplicitBitVect* FoldFingerprint(const ExplicitBitVect&, unsigned int);
 
-template std::string BitVectToText(const SparseBitVect&);
-template std::string BitVectToText(const ExplicitBitVect&);
+template RDKIT_DATASTRUCTS_EXPORT std::string BitVectToText(const SparseBitVect&);
+template RDKIT_DATASTRUCTS_EXPORT std::string BitVectToText(const ExplicitBitVect&);
 
-template std::string BitVectToFPSText(const SparseBitVect&);
-template std::string BitVectToFPSText(const ExplicitBitVect&);
-template void UpdateBitVectFromFPSText(SparseBitVect&, const std::string&);
-template void UpdateBitVectFromFPSText(ExplicitBitVect&, const std::string&);
+template RDKIT_DATASTRUCTS_EXPORT std::string BitVectToFPSText(const SparseBitVect&);
+template RDKIT_DATASTRUCTS_EXPORT std::string BitVectToFPSText(const ExplicitBitVect&);
+template RDKIT_DATASTRUCTS_EXPORT void UpdateBitVectFromFPSText(SparseBitVect&, const std::string&);
+template RDKIT_DATASTRUCTS_EXPORT void UpdateBitVectFromFPSText(ExplicitBitVect&, const std::string&);
 
-template std::string BitVectToBinaryText(const SparseBitVect&);
-template std::string BitVectToBinaryText(const ExplicitBitVect&);
-template void UpdateBitVectFromBinaryText(SparseBitVect&, const std::string&);
-template void UpdateBitVectFromBinaryText(ExplicitBitVect&, const std::string&);
+template RDKIT_DATASTRUCTS_EXPORT std::string BitVectToBinaryText(const SparseBitVect&);
+template RDKIT_DATASTRUCTS_EXPORT std::string BitVectToBinaryText(const ExplicitBitVect&);
+template RDKIT_DATASTRUCTS_EXPORT void UpdateBitVectFromBinaryText(SparseBitVect&, const std::string&);
+template RDKIT_DATASTRUCTS_EXPORT void UpdateBitVectFromBinaryText(ExplicitBitVect&, const std::string&);
 
 // from here:
 // http://stackoverflow.com/questions/3849337/msvc-equivalent-to-builtin-popcount
@@ -823,7 +861,8 @@ unsigned int CalcBitmapPopcount(const unsigned char* afp, unsigned int nBytes) {
 #else
   unsigned int eidx = nBytes / sizeof(BUILTIN_POPCOUNT_TYPE);
   for (unsigned int i = 0; i < eidx; ++i) {
-    popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)afp)[i]));
+    popcount += static_cast<unsigned int>(
+        BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)afp)[i]));
   }
   for (unsigned int i = eidx * sizeof(BUILTIN_POPCOUNT_TYPE); i < nBytes; ++i) {
     popcount += byte_popcounts[afp[i]];
@@ -831,6 +870,31 @@ unsigned int CalcBitmapPopcount(const unsigned char* afp, unsigned int nBytes) {
 #endif
   return popcount;
 }
+
+unsigned int CalcBitmapNumBitsInCommon(const unsigned char* afp,
+                                       const unsigned char* bfp,
+                                       unsigned int nBytes) {
+  PRECONDITION(afp, "no afp");
+  PRECONDITION(bfp, "no bfp");
+  unsigned int intersect_popcount = 0;
+#ifndef USE_BUILTIN_POPCOUNT
+  for (unsigned int i = 0; i < nBytes; i++) {
+    intersect_popcount += byte_popcounts[afp[i] & bfp[i]];
+  }
+#else
+  BUILTIN_POPCOUNT_TYPE eidx = nBytes / sizeof(BUILTIN_POPCOUNT_TYPE);
+  for (BUILTIN_POPCOUNT_TYPE i = 0; i < eidx; ++i) {
+    intersect_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(
+        ((BUILTIN_POPCOUNT_TYPE*)afp)[i] & ((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
+  }
+  for (BUILTIN_POPCOUNT_TYPE i = eidx * sizeof(BUILTIN_POPCOUNT_TYPE);
+       i < nBytes; ++i) {
+    intersect_popcount += byte_popcounts[afp[i] & bfp[i]];
+  }
+#endif
+  return intersect_popcount;
+}
+
 double CalcBitmapTanimoto(const unsigned char* afp, const unsigned char* bfp,
                           unsigned int nBytes) {
   PRECONDITION(afp, "no afp");
@@ -844,12 +908,13 @@ double CalcBitmapTanimoto(const unsigned char* afp, const unsigned char* bfp,
 #else
   BUILTIN_POPCOUNT_TYPE eidx = nBytes / sizeof(BUILTIN_POPCOUNT_TYPE);
   for (BUILTIN_POPCOUNT_TYPE i = 0; i < eidx; ++i) {
-    union_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)afp)[i] |
-                                           ((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
-    intersect_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)afp)[i] &
-                                               ((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
+    union_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(
+        ((BUILTIN_POPCOUNT_TYPE*)afp)[i] | ((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
+    intersect_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(
+        ((BUILTIN_POPCOUNT_TYPE*)afp)[i] & ((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
   }
-  for (BUILTIN_POPCOUNT_TYPE i = eidx * sizeof(BUILTIN_POPCOUNT_TYPE); i < nBytes; ++i) {
+  for (BUILTIN_POPCOUNT_TYPE i = eidx * sizeof(BUILTIN_POPCOUNT_TYPE);
+       i < nBytes; ++i) {
     union_popcount += byte_popcounts[afp[i] | bfp[i]];
     intersect_popcount += byte_popcounts[afp[i] & bfp[i]];
   }
@@ -876,12 +941,15 @@ double CalcBitmapDice(const unsigned char* afp, const unsigned char* bfp,
 #else
   BUILTIN_POPCOUNT_TYPE eidx = nBytes / sizeof(BUILTIN_POPCOUNT_TYPE);
   for (BUILTIN_POPCOUNT_TYPE i = 0; i < eidx; ++i) {
-    a_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)afp)[i]));
-    b_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
-    intersect_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)afp)[i] &
-                                               ((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
+    a_popcount += static_cast<unsigned int>(
+        BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)afp)[i]));
+    b_popcount += static_cast<unsigned int>(
+        BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
+    intersect_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(
+        ((BUILTIN_POPCOUNT_TYPE*)afp)[i] & ((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
   }
-  for (BUILTIN_POPCOUNT_TYPE i = eidx * sizeof(BUILTIN_POPCOUNT_TYPE); i < nBytes; ++i) {
+  for (BUILTIN_POPCOUNT_TYPE i = eidx * sizeof(BUILTIN_POPCOUNT_TYPE);
+       i < nBytes; ++i) {
     a_popcount += byte_popcounts[afp[i]];
     b_popcount += byte_popcounts[bfp[i]];
     intersect_popcount += byte_popcounts[afp[i] & bfp[i]];
@@ -909,12 +977,15 @@ double CalcBitmapTversky(const unsigned char* afp, const unsigned char* bfp,
 #else
   BUILTIN_POPCOUNT_TYPE eidx = nBytes / sizeof(BUILTIN_POPCOUNT_TYPE);
   for (BUILTIN_POPCOUNT_TYPE i = 0; i < eidx; ++i) {
-    intersect_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)afp)[i] &
-                                               ((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
-    acount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)afp)[i]));
-    bcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
+    intersect_popcount += static_cast<unsigned int>(BUILTIN_POPCOUNT_INSTR(
+        ((BUILTIN_POPCOUNT_TYPE*)afp)[i] & ((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
+    acount += static_cast<unsigned int>(
+        BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)afp)[i]));
+    bcount += static_cast<unsigned int>(
+        BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)bfp)[i]));
   }
-  for (BUILTIN_POPCOUNT_TYPE i = eidx * sizeof(BUILTIN_POPCOUNT_TYPE); i < nBytes; ++i) {
+  for (BUILTIN_POPCOUNT_TYPE i = eidx * sizeof(BUILTIN_POPCOUNT_TYPE);
+       i < nBytes; ++i) {
     intersect_popcount += byte_popcounts[afp[i] & bfp[i]];
     acount += byte_popcounts[afp[i]];
     bcount += byte_popcounts[bfp[i]];
@@ -943,7 +1014,7 @@ bool CalcBitmapAllProbeBitsMatch(const unsigned char* probe,
   unsigned int eidx = nBytes / sizeof(BUILTIN_POPCOUNT_TYPE);
   for (unsigned int i = 0; i < eidx; ++i) {
     if (BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)probe)[i] &
-                           ((BUILTIN_POPCOUNT_TYPE*)ref)[i]) !=
+                               ((BUILTIN_POPCOUNT_TYPE*)ref)[i]) !=
         BUILTIN_POPCOUNT_INSTR(((BUILTIN_POPCOUNT_TYPE*)probe)[i])) {
       return false;
     }

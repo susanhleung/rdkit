@@ -1,6 +1,5 @@
-// $Id$
 //
-//  Copyright (C) 2001-2008 Greg Landrum and Rational Discovery LLC
+//  Copyright (C) 2001-2018 Greg Landrum and Rational Discovery LLC
 //
 //   @@ All Rights Reserved @@
 //  This file is part of the RDKit.
@@ -9,6 +8,7 @@
 //  of the RDKit source tree.
 //
 
+#include <RDBoost/test.h>
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/MonomerInfo.h>
 #include <GraphMol/RDKitQueries.h>
@@ -21,6 +21,7 @@
 #include <GraphMol/SmilesParse/SmilesWrite.h>
 #include <sstream>
 #include <iostream>
+#include <boost/range/iterator_range.hpp>
 
 using namespace std;
 using namespace RDKit;
@@ -498,7 +499,7 @@ void testMisc() {
   boost::tie(atBegin, atEnd) = m2.getVertices();
   TEST_ASSERT(atBegin != atEnd);
   while (atBegin != atEnd) {
-    const ATOM_SPTR at2 = m2[*atBegin];
+    const Atom *at2 = m2[*atBegin];
     TEST_ASSERT(at2->getIdx() == *atBegin);
     atBegin++;
   }
@@ -555,7 +556,7 @@ void testDegree() {
 }
 
 void testIssue1993296() {
-  RWMol *m = new RWMol();
+  auto *m = new RWMol();
   bool ok;
   BOOST_LOG(rdInfoLog) << "-------------------------------------" << std::endl;
   BOOST_LOG(rdInfoLog) << "Testing Issue 1993296" << std::endl;
@@ -587,7 +588,7 @@ void testIssue1993296() {
     ok = true;
   }
 
-  Bond *newB = new Bond();
+  auto *newB = new Bond();
   newB->setBeginAtomIdx(0);
   newB->setEndAtomIdx(1);
   newB->setBondType(Bond::SINGLE);
@@ -620,7 +621,7 @@ void testIssue2381580() {
   BOOST_LOG(rdInfoLog) << "Testing Issue 2381580" << std::endl;
 
   {
-    RWMol *m = new RWMol();
+    auto *m = new RWMol();
     m->addAtom(new Atom(5));
     m->addAtom(new Atom(6));
     m->addAtom(new Atom(6));
@@ -636,7 +637,7 @@ void testIssue2381580() {
   }
 
   {
-    RWMol *m = new RWMol();
+    auto *m = new RWMol();
     m->addAtom(new Atom(5));
     m->addAtom(new Atom(6));
     m->addAtom(new Atom(6));
@@ -655,7 +656,7 @@ void testIssue2381580() {
   }
 
   {
-    RWMol *m = new RWMol();
+    auto *m = new RWMol();
     m->addAtom(new Atom(5));
     m->addAtom(new Atom(6));
     m->addAtom(new Atom(6));
@@ -676,7 +677,7 @@ void testIssue2381580() {
   }
 
   {
-    RWMol *m = new RWMol();
+    auto *m = new RWMol();
     m->addAtom(new Atom(5));
     m->addAtom(new Atom(6));
     m->addAtom(new Atom(6));
@@ -698,7 +699,7 @@ void testIssue2381580() {
   }
 
   {
-    RWMol *m = new RWMol();
+    auto *m = new RWMol();
     m->addAtom(new Atom(5));
     m->addAtom(new Atom(6));
     m->addAtom(new Atom(6));
@@ -713,7 +714,7 @@ void testIssue2381580() {
   }
 
   {
-    RWMol *m = new RWMol();
+    auto *m = new RWMol();
     m->addAtom(new Atom(5));
     m->addAtom(new Atom(6));
     m->addAtom(new Atom(6));
@@ -749,7 +750,7 @@ void testIssue2840217() {
   BOOST_LOG(rdInfoLog) << "Testing Issue 2840217" << std::endl;
 
   {
-    RWMol *m = new RWMol();
+    auto *m = new RWMol();
     for (unsigned int i = 0; i < 200; ++i) {
       m->addAtom(new Atom(6));
       m->addAtom(new Atom(6));
@@ -774,7 +775,7 @@ void testIssue2840217() {
 void test1() {
   {
     RWMol m;
-    Atom *newAtom = new Atom(8);
+    auto *newAtom = new Atom(8);
 
     m.addAtom(newAtom);
     CHECK_INVARIANT(m.getAtomWithIdx(0)->getIdx() == 0, "");
@@ -859,16 +860,16 @@ void test1() {
     }
 
     BOOST_LOG(rdInfoLog) << " ------------------- " << endl;
-    Atom *newA = new Atom(12);
+    auto *newA = new Atom(12);
     int newIdx = m.addAtom(newA);
     m.addBond(newIdx - 1, newIdx, Bond::AROMATIC);
     // m.debugMol(cout);
     BOOST_LOG(rdInfoLog) << " trying a replace " << endl;
-    Atom *repA = new Atom(22);
+    auto *repA = new Atom(22);
     m.replaceAtom(newIdx, repA);
     delete repA;
     TEST_ASSERT(m.getAtomWithIdx(newIdx)->getAtomicNum() == 22);
-    Bond *nbnd = new Bond(Bond::DOUBLE);
+    auto *nbnd = new Bond(Bond::DOUBLE);
     TEST_ASSERT(m.getBondWithIdx(m.getNumBonds() - 1)->getBondType() ==
                 Bond::AROMATIC);
     m.replaceBond(m.getNumBonds() - 1, nbnd);
@@ -882,7 +883,7 @@ void test1() {
     m.addAtom(new Atom(6));
     m.addAtom(new Atom(6));
     m.addBond(0, 1, Bond::SINGLE);
-    Conformer *conf = new Conformer(m.getNumAtoms());
+    auto *conf = new Conformer(m.getNumAtoms());
     m.addConformer(conf);
     m.getConformer().setAtomPos(0, RDGeom::Point3D(1.0, 0.0, 0.0));
     m.getConformer().setAtomPos(1, RDGeom::Point3D(0.0, 1.0, 0.0));
@@ -924,7 +925,7 @@ void test1() {
     TEST_ASSERT(m.getNumConformers() == 0);
 
     // insert molecule with a conf:
-    Conformer *conf = new Conformer(m2.getNumAtoms());
+    auto *conf = new Conformer(m2.getNumAtoms());
     m2.addConformer(conf);
     m2.getConformer().setAtomPos(0, RDGeom::Point3D(1.0, 1.0, 0.0));
     m.insertMol(m2);
@@ -980,7 +981,7 @@ void testAddAtomWithConf() {
     m.addAtom(new Atom(6));
     m.addAtom(new Atom(6));
 
-    Conformer *conf = new Conformer(m.getNumAtoms());
+    auto *conf = new Conformer(m.getNumAtoms());
     m.addConformer(conf);
 
     m.addAtom(new Atom(6));
@@ -992,7 +993,7 @@ void testAddAtomWithConf() {
     m.addAtom(new Atom(6));
     m.addAtom(new Atom(6));
 
-    Conformer *conf = new Conformer(m.getNumAtoms());
+    auto *conf = new Conformer(m.getNumAtoms());
     m.addConformer(conf);
 
     m.addAtom();
@@ -1062,7 +1063,7 @@ void testAtomResidues() {
   BOOST_LOG(rdInfoLog) << "Testing residue information handling on atoms"
                        << std::endl;
   {
-    RWMol *m = new RWMol();
+    auto *m = new RWMol();
 
     m->addAtom(new Atom(6));
     m->addAtom(new Atom(6));
@@ -1089,7 +1090,7 @@ void testAtomResidues() {
                     m->getAtomWithIdx(1)->getMonomerInfo())
                     ->getSerialNumber() == 3);
 
-    RWMol *m2 = new RWMol(*m);
+    auto *m2 = new RWMol(*m);
     delete m;
 
     TEST_ASSERT((m2->getAtomWithIdx(0)->getMonomerInfo()));
@@ -1151,8 +1152,7 @@ std::string qhelper(Atom::QUERYATOM_QUERY *q, unsigned int depth = 0) {
   if (q) {
     for (unsigned int i = 0; i < depth; ++i) res += "  ";
     res += q->getFullDescription() + "\n";
-    for (Atom::QUERYATOM_QUERY::CHILD_VECT_CI ci = q->beginChildren();
-         ci != q->endChildren(); ++ci) {
+    for (auto ci = q->beginChildren(); ci != q->endChildren(); ++ci) {
       res += qhelper((*ci).get(), depth + 1);
     }
   }
@@ -1208,8 +1208,8 @@ void testAtomListLineRoundTrip() {
       MolDataStreamToMol(inStream2, line, sanitize, removeHs, strictParsing);
   TEST_ASSERT(m2);
   TEST_ASSERT(desc == qhelper(m2->getAtomWithIdx(3)->getQuery()));
-  Atom::ATOM_SPTR cl(new Atom(17));
-  Atom::ATOM_SPTR o(new Atom(17));
+  Atom *cl(new Atom(17));
+  Atom *o(new Atom(17));
   TEST_ASSERT(dynamic_cast<QueryAtom *>(m->getAtomWithIdx(3))->Match(cl));
   TEST_ASSERT(dynamic_cast<QueryAtom *>(m->getAtomWithIdx(3))->Match(o));
   TEST_ASSERT(dynamic_cast<QueryAtom *>(m2->getAtomWithIdx(3))->Match(cl));
@@ -1270,8 +1270,9 @@ void testGithub608() {
 }
 
 #ifdef RDK_TEST_MULTITHREADED
+#include <thread>
+#include <future>
 #include <RDGeneral/BoostStartInclude.h>
-#include <boost/thread.hpp>
 #include <boost/dynamic_bitset.hpp>
 #include <RDGeneral/BoostEndInclude.h>
 namespace {
@@ -1289,16 +1290,18 @@ void testGithub381() {
       << "    Test github381: thread-safe initialization of the periodic table"
       << std::endl;
 
-  boost::thread_group tg;
+  std::vector<std::future<void>> tg;
   unsigned int count = 32;
   std::vector<const PeriodicTable *> pts(count);
 #if 1
   for (unsigned int i = 0; i < count; ++i) {
     std::cerr.flush();
-    tg.add_thread(new boost::thread(runblock, &pts, i));
+    tg.emplace_back(std::async(std::launch::async, runblock, &pts, i));
   }
-  tg.join_all();
-  TEST_ASSERT(pts[0] != NULL);
+  for (auto &fut : tg) {
+    fut.get();
+  }
+  TEST_ASSERT(pts[0] != nullptr);
   for (unsigned int i = 1; i < count; ++i) {
     TEST_ASSERT(pts[i] == pts[0]);
   }
@@ -1358,6 +1361,135 @@ void testGithub1453() {
   BOOST_LOG(rdErrorLog) << "  done" << std::endl;
 }
 
+void testRanges() {
+  BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
+  BOOST_LOG(rdErrorLog) << "    Test range-based for loops." << std::endl;
+  RWMol *m = SmilesToMol("C1CC1");
+  TEST_ASSERT(m);
+  TEST_ASSERT(m->getNumAtoms() == 3);
+
+  // For by value (ok since the atoms are pointers)
+  unsigned int i = 0;
+  for (auto atom : m->atoms()) {
+    TEST_ASSERT(atom->getIdx() == i);
+    i++;
+  }
+
+  // try refs
+  i = 0;
+  for (auto &atom : m->atoms()) {
+    TEST_ASSERT(atom->getIdx() == i);
+    i++;
+  }
+
+  // try const refs
+  i = 0;
+  for (auto const &atom : m->atoms()) {
+    TEST_ASSERT(atom->getIdx() == i);
+    i++;
+  }
+
+  const RWMol *cm = m;
+  i = 0;
+  for (auto atom : cm->atoms()) {
+    TEST_ASSERT(atom->getIdx() == i);
+    i++;
+  }
+
+  i = 0;
+  for (auto bond : m->bonds()) {
+    TEST_ASSERT(bond->getIdx() == i);
+    i++;
+  }
+
+  i = 0;
+  for (auto bond : cm->bonds()) {
+    TEST_ASSERT(bond->getIdx() == i);
+    i++;
+  }
+
+  const auto atom = m->getAtomWithIdx(0);
+  i = 0;
+  for (const auto &nbri :
+       boost::make_iterator_range(m->getAtomNeighbors(atom))) {
+    const auto &nbr = (*m)[nbri];
+    TEST_ASSERT(nbr->getAtomicNum() == 6);
+    i++;
+  }
+  TEST_ASSERT(i == 2);
+
+  i = 0;
+  for (const auto &nbri : boost::make_iterator_range(m->getAtomBonds(atom))) {
+    const auto &bnd = (*m)[nbri];
+    TEST_ASSERT(bnd->getBondType() == Bond::SINGLE);
+    i++;
+  }
+  TEST_ASSERT(i == 2);
+
+  // non-const versions of the same things
+  i = 0;
+  for (const auto &nbri :
+       boost::make_iterator_range(m->getAtomNeighbors(atom))) {
+    auto nbr = (*m)[nbri];
+    TEST_ASSERT(nbr->getAtomicNum() == 6);
+    nbr->setAtomicNum(7);
+    nbr->setAtomicNum(6);
+    i++;
+  }
+  TEST_ASSERT(i == 2);
+
+  i = 0;
+  for (const auto &nbri : boost::make_iterator_range(m->getAtomBonds(atom))) {
+    auto bnd = (*m)[nbri];
+    TEST_ASSERT(bnd->getBondType() == Bond::SINGLE);
+    bnd->setBondType(Bond::DOUBLE);
+    bnd->setBondType(Bond::SINGLE);
+    i++;
+  }
+  TEST_ASSERT(i == 2);
+
+  delete m;
+
+  BOOST_LOG(rdErrorLog) << "  done" << std::endl;
+}
+
+void testGithub1642() {
+  BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
+  BOOST_LOG(rdErrorLog)
+      << "    Test github1642: Atom index type is too low for big molecules."
+      << std::endl;
+  RWMol m2;
+
+  unsigned int big_num_atoms = 70000;
+  Atom *carbon = new Atom(6);
+  for (unsigned int i = 0; i < big_num_atoms; ++i) {
+    m2.addAtom(carbon);
+  }
+
+  TEST_ASSERT(m2.getNumAtoms() == big_num_atoms);
+
+  for (int i = big_num_atoms; i > 0; --i) {
+    m2.removeAtom(i - 1);
+  }
+  TEST_ASSERT(m2.getNumAtoms() == 0);
+
+  BOOST_LOG(rdErrorLog) << "Finished" << std::endl;
+}
+
+void testGithub1843() {
+  BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
+  BOOST_LOG(rdErrorLog)
+      << "    Test github1843: RWMol.clear() should not destroy ring pointer."
+      << std::endl;
+
+  RWMol *m = SmilesToMol("N1NN1");
+  m->clear();
+  MolOps::sanitizeMol(*m);
+  delete m;  
+  BOOST_LOG(rdErrorLog) << "Finished" << std::endl;
+  
+}
+
 // -------------------------------------------------------------------
 int main() {
   RDLog::InitLogs();
@@ -1387,6 +1519,9 @@ int main() {
   testGithub1041();
   testGithub1041();
   testGithub1453();
+  testRanges();
+  testGithub1642();
+  testGithub1843();
 
   return 0;
 }

@@ -9,6 +9,7 @@
 //  of the RDKit source tree.
 //
 
+#include <RDBoost/test.h>
 #include <iostream>
 #include <fstream>
 
@@ -372,7 +373,7 @@ void testLipinski1() {
     delete test_mol;
   }
   while (!suppl.atEnd()) {
-    ROMol *mol = 0;
+    ROMol *mol = nullptr;
     ++idx;
     try {
       mol = suppl.next();
@@ -845,9 +846,8 @@ void runblock(const std::vector<ROMol *> &mols, unsigned int count,
   }
 };
 }
-#include <RDGeneral/BoostStartInclude.h>
-#include <boost/thread.hpp>
-#include <RDGeneral/BoostEndInclude.h>
+#include <thread>
+#include <future>
 void testMultiThread() {
   BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
   BOOST_LOG(rdErrorLog) << "    Test multithreading" << std::endl;
@@ -858,7 +858,7 @@ void testMultiThread() {
   std::cerr << "reading molecules" << std::endl;
   std::vector<ROMol *> mols;
   while (!suppl.atEnd() && mols.size() < 100) {
-    ROMol *mol = 0;
+    ROMol *mol = nullptr;
     try {
       mol = suppl.next();
     } catch (...) {
@@ -867,18 +867,19 @@ void testMultiThread() {
     if (!mol) continue;
     mols.push_back(mol);
   }
-  boost::thread_group tg;
+  std::vector<std::future<void>> tg;
 
   std::cerr << "processing" << std::endl;
   unsigned int count = 4;
   for (unsigned int i = 0; i < count; ++i) {
     std::cerr << " launch :" << i << std::endl;
     std::cerr.flush();
-    tg.add_thread(new boost::thread(runblock, mols, count, i));
+    tg.emplace_back(std::async(std::launch::async, runblock, mols, count, i));
   }
-  tg.join_all();
-
-  for (unsigned int i = 0; i < mols.size(); ++i) delete mols[i];
+  for (auto &fut : tg) {
+    fut.get();
+  }
+  for (auto &mol : mols) delete mol;
 
   BOOST_LOG(rdErrorLog) << "  done" << std::endl;
 }
@@ -1818,22 +1819,25 @@ void testGitHubIssue694() {
     mol = SmilesToMol("[35Cl-]");
     TEST_ASSERT(mol);
     mw = calcExactMW(*mol);
-    TEST_ASSERT(feq(mw, PeriodicTable::getTable()->getMassForIsotope(17, 35) +
-                            constants::electronMass,
+    TEST_ASSERT(feq(mw,
+                    PeriodicTable::getTable()->getMassForIsotope(17, 35) +
+                        constants::electronMass,
                     .000001));
     delete mol;
     mol = SmilesToMol("[35Cl+]");
     TEST_ASSERT(mol);
     mw = calcExactMW(*mol);
-    TEST_ASSERT(feq(mw, PeriodicTable::getTable()->getMassForIsotope(17, 35) -
-                            constants::electronMass,
+    TEST_ASSERT(feq(mw,
+                    PeriodicTable::getTable()->getMassForIsotope(17, 35) -
+                        constants::electronMass,
                     .000001));
     delete mol;
     mol = SmilesToMol("[35Cl+2]");
     TEST_ASSERT(mol);
     mw = calcExactMW(*mol);
-    TEST_ASSERT(feq(mw, PeriodicTable::getTable()->getMassForIsotope(17, 35) -
-                            2 * constants::electronMass,
+    TEST_ASSERT(feq(mw,
+                    PeriodicTable::getTable()->getMassForIsotope(17, 35) -
+                        2 * constants::electronMass,
                     .000001));
     delete mol;
   }
@@ -1907,8 +1911,8 @@ void testProperties() {
       Properties sink(names);
       TEST_ASSERT(0);  // should throw
     } catch (KeyErrorException) {
-      BOOST_LOG(rdErrorLog) << "---Caught keyerror (bad property name)---"
-                            << std::endl;
+      BOOST_LOG(rdErrorLog)
+          << "---Caught keyerror (bad property name)---" << std::endl;
     }
   }
 }
@@ -2073,7 +2077,7 @@ void testUSRCATDescriptor() {
   std::string fname1 =
       rdbase + "/Code/GraphMol/Descriptors/test_data/cyclohexane.mol";
   mol = MolFileToMol(fname1, true, false, true);
-  std::vector<std::vector<unsigned int> > atomIds;
+  std::vector<std::vector<unsigned int>> atomIds;
   std::vector<double> myUSR(12);
   USRCAT(*mol, myUSR, atomIds);
   for (unsigned int i = 0; i < myUSR.size(); ++i) {

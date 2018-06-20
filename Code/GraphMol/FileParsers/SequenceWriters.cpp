@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string>
 
+#include "SequenceWriters.h"
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/GraphMol.h>
 #include <GraphMol/MonomerInfo.h>
@@ -217,7 +218,7 @@ static const char *getHELMAAMonomer(const AtomPDBResidueInfo *info) {
       if (!strcmp(ptr, "VAL")) return "V";
       break;
   }
-  return (const char *)0;
+  return (const char *)nullptr;
 }
 
 static bool IsEupeptideBond(AtomPDBResidueInfo *src, AtomPDBResidueInfo *dst) {
@@ -343,7 +344,7 @@ static const char *getHELMNAMonomer(const AtomPDBResidueInfo *info) {
       }
     }
   }
-  return (const char*)0;
+  return (const char *)nullptr;
 }
 
 

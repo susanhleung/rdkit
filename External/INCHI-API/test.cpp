@@ -30,8 +30,8 @@ using namespace RDKit;
 namespace {
 void runblock(const std::vector<ROMol *> &mols, unsigned int count,
               unsigned int idx, std::vector<std::string> &inchis,
-              std::vector<std::string> &keys) {
-  for (unsigned int j = 0; j < 50; j++) {
+              const std::vector<std::string> &keys) {
+  for (unsigned int j = 0; j < 200; j++) {
     for (unsigned int i = 0; i < mols.size(); ++i) {
       if (i % count != idx) continue;
       ROMol *mol = mols[i];
@@ -40,6 +40,8 @@ void runblock(const std::vector<ROMol *> &mols, unsigned int count,
       TEST_ASSERT(inchi == inchis[i]);
       std::string key = InchiToInchiKey(inchi);
       TEST_ASSERT(key == keys[i]);
+      std::string key2 = MolToInchiKey(*mol);
+      TEST_ASSERT(key2 == keys[i]);
       ROMol *mol2 = InchiToMol(inchi, tmp);
       TEST_ASSERT(mol2);
       ExtraInchiReturnValues tmp2;
@@ -51,7 +53,8 @@ void runblock(const std::vector<ROMol *> &mols, unsigned int count,
 };
 }
 
-#include <boost/thread.hpp>
+#include <thread>
+#include <future>
 void testMultiThread() {
   BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
   BOOST_LOG(rdErrorLog) << "    Test multithreading" << std::endl;
@@ -82,15 +85,18 @@ void testMultiThread() {
     keys.push_back(key);
   }
 
-  boost::thread_group tg;
+  std::vector<std::future<void>> tg;
   std::cerr << "processing" << std::endl;
   unsigned int count = 4;
   for (unsigned int i = 0; i < count; ++i) {
     std::cerr << " launch :" << i << std::endl;
     std::cerr.flush();
-    tg.add_thread(new boost::thread(runblock, mols, count, i, inchis, keys));
+    tg.emplace_back(std::async(std::launch::async, runblock, std::ref(mols),
+                               count, i, std::ref(inchis), std::ref(keys)));
   }
-  tg.join_all();
+  for (auto &fut : tg) {
+    fut.get();
+  }
 
   for (unsigned int i = 0; i < mols.size(); ++i) delete mols[i];
 
@@ -159,14 +165,13 @@ void testGithubIssue8() {
     ROMol *m2 = InchiToMol(inchi, tmp2);
     TEST_ASSERT(m2);
     std::string smi = MolToSmiles(*m2, true);
-    TEST_ASSERT(smi == "N=c1cc2oc3cc(N)ccc3c(-c3ccccc3C(=O)O)c-2cc1[125I]");
+    TEST_ASSERT(smi == "[H]/N=c1\\cc2oc3cc(N)ccc3c(-c3ccccc3C(=O)O)c-2cc1[125I]");
 
     inchi = MolToInchi(*m2, tmp2);
-    TEST_ASSERT(inchi ==
+    TEST_ASSERT(inchi == 
                 "InChI=1S/C20H13IN2O3/"
                 "c21-15-8-14-18(9-16(15)23)26-17-7-10(22)5-6-13(17)19(14)11-3-"
-                "1-2-4-12(11)20(24)25/h1-9,23H,22H2,(H,24,25)/i21-2");
-
+                "1-2-4-12(11)20(24)25/h1-9,23H,22H2,(H,24,25)/b23-16+/i21-2");
     delete m;
     delete m2;
   }

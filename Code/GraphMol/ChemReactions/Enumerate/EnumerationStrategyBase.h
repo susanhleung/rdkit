@@ -29,6 +29,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
+#include <RDBoost/export.h>
 #ifndef ENUMERATION_STRATEGY_H
 #define ENUMERATION_STRATEGY_H
 
@@ -37,12 +38,14 @@
 #include <vector>
 #include <RDGeneral/BoostStartInclude.h>
 #include <boost/cstdint.hpp>
+#ifdef RDK_USE_BOOST_SERIALIZATION
 #include <boost/serialization/assume_abstract.hpp>
 #include <boost/serialization/vector.hpp>
 // the next two includes need to be there for boost 1.56
 #include <boost/serialization/singleton.hpp>
 #include <boost/serialization/extended_type_info.hpp>
 #include <boost/serialization/shared_ptr.hpp>
+#endif
 #include <RDGeneral/BoostEndInclude.h>
 
 #include <GraphMol/RDKitBase.h>
@@ -50,7 +53,7 @@
 namespace RDKit {
 
 //! class for flagging enumeration strategy errors
-class EnumerationStrategyException : public std::exception {
+class RDKIT_CHEMREACTIONS_EXPORT EnumerationStrategyException : public std::exception {
  public:
   EnumerationStrategyException(const char *msg) : _msg(msg){};
   EnumerationStrategyException(const std::string &msg) : _msg(msg){};
@@ -78,14 +81,14 @@ EnumerationTypes::RGROUPS getSizesFromBBs(
 //!  Helper function for enumeration, bbs are stored in a
 //!   std::vector< std::vector<boost:shared_ptr<ROMol> >
 //
-EnumerationTypes::RGROUPS getSizesFromReactants(
+RDKIT_CHEMREACTIONS_EXPORT EnumerationTypes::RGROUPS getSizesFromReactants(
     const std::vector<MOL_SPTR_VECT> &bbs);
 
 //! getReactantsFromRGroups
 //!  Helper function for enumeration, bbs are stored in a
 //!   std::vector< std::vector<boost:shared_ptr<ROMol> >
 //
-MOL_SPTR_VECT getReactantsFromRGroups(const std::vector<MOL_SPTR_VECT> &bbs,
+RDKIT_CHEMREACTIONS_EXPORT MOL_SPTR_VECT getReactantsFromRGroups(const std::vector<MOL_SPTR_VECT> &bbs,
                                       const EnumerationTypes::RGROUPS &rgroups);
 
 //! computeNumProducts
@@ -95,7 +98,7 @@ MOL_SPTR_VECT getReactantsFromRGroups(const std::vector<MOL_SPTR_VECT> &bbs,
 //!   number will not fit into the machines integer type.
 //!   n.b. An overflow simply means there are a lot of products
 //!     not that they cannot be enumerated
-boost::uint64_t computeNumProducts(const EnumerationTypes::RGROUPS &sizes);
+RDKIT_CHEMREACTIONS_EXPORT boost::uint64_t computeNumProducts(const EnumerationTypes::RGROUPS &sizes);
 
 //! Base Class for enumeration strageties
 //!  Usage:
@@ -111,7 +114,7 @@ boost::uint64_t computeNumProducts(const EnumerationTypes::RGROUPS &sizes);
 //!   }
 //!  \endverbatim
 
-class EnumerationStrategyBase {
+class RDKIT_CHEMREACTIONS_EXPORT EnumerationStrategyBase {
  protected:
   EnumerationTypes::RGROUPS m_permutation;  // where are we currently?
   EnumerationTypes::RGROUPS
@@ -198,10 +201,13 @@ class EnumerationStrategyBase {
     ar &m_numPermutations;
   }
 };
-
+#ifdef RDK_USE_BOOST_SERIALIZATION
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(EnumerationStrategyBase)
+#endif
 }
 
+#ifdef RDK_USE_BOOST_SERIALIZATION
 BOOST_CLASS_VERSION(RDKit::EnumerationStrategyBase, 1)
+#endif
 
 #endif

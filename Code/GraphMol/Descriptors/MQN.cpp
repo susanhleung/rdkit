@@ -18,7 +18,7 @@
 
 namespace RDKit {
 namespace Descriptors {
-std::vector<unsigned int> calcMQNs(const ROMol &mol, bool force) {
+std::vector<unsigned int> calcMQNs(const ROMol& mol, bool force) {
   RDUNUSED_PARAM(force);
   // FIX: use force value to enable caching
   std::vector<unsigned int> res(42, 0);
@@ -32,7 +32,7 @@ std::vector<unsigned int> calcMQNs(const ROMol &mol, bool force) {
   ROMol::VERTEX_ITER atBegin, atEnd;
   boost::tie(atBegin, atEnd) = mol.getVertices();
   while (atBegin != atEnd) {
-    const ATOM_SPTR at = mol[*atBegin];
+    const Atom* at = mol[*atBegin];
     ++atBegin;
     unsigned int nHs = at->getTotalNumHs();
     unsigned int nRings = mol.getRingInfo()->numAtomRings(at->getIdx());
@@ -135,7 +135,7 @@ std::vector<unsigned int> calcMQNs(const ROMol &mol, bool force) {
   ROMol::EDGE_ITER firstB, lastB;
   boost::tie(firstB, lastB) = mol.getEdges();
   while (firstB != lastB) {
-    const BOND_SPTR bond = mol[*firstB];
+    const Bond* bond = mol[*firstB];
     if (bond->getIsAromatic()) ++nAromatic;
     unsigned int nRings = mol.getRingInfo()->numBondRings(bond->getIdx());
     switch (bond->getBondType()) {
@@ -174,7 +174,7 @@ std::vector<unsigned int> calcMQNs(const ROMol &mol, bool force) {
 
   // ---------------------------------------------------
   //  ring size counts
-  BOOST_FOREACH (const INT_VECT &iv, mol.getRingInfo()->atomRings()) {
+  BOOST_FOREACH (const INT_VECT& iv, mol.getRingInfo()->atomRings()) {
     if (iv.size() < 10) {
       res[iv.size() + 29]++;
     } else {

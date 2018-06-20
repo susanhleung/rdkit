@@ -31,7 +31,7 @@
 //
 
 #include <boost/version.hpp>
-#if (BOOST_VERSION / 100000) > 1 or ((BOOST_VERSION / 100) % 1000) >= 53
+#if (BOOST_VERSION / 100000) > 1 || ((BOOST_VERSION / 100) % 1000) >= 53
 #define RDK_HAVE_MULTIPREC
 #include <boost/multiprecision/cpp_int.hpp>
 #endif
@@ -86,8 +86,8 @@ void EnumerateLibraryBase::resetState() {
   m_enumerator.reset(m_initialEnumerator->copy());
 }
 
-std::vector<std::vector<std::string> > EnumerateLibraryBase::nextSmiles() {
-  std::vector<std::vector<std::string> > result;
+std::vector<std::vector<std::string>> EnumerateLibraryBase::nextSmiles() {
+  std::vector<std::vector<std::string>> result;
   std::vector<MOL_SPTR_VECT> mols = next();
   const bool doisomeric = true;
   result.resize(mols.size());
@@ -142,16 +142,11 @@ BBS removeNonmatchingReagents(const ChemicalReaction &rxn, BBS bbs,
         // see if we have any sane products in the results
         std::vector<MOL_SPTR_VECT> partialProducts =
             rxn.runReactant(mol, reactant_idx);
-        for (size_t productTemplate_idx = 0;
-             productTemplate_idx < partialProducts.size();
-             ++productTemplate_idx) {
+        for (auto &partialProduct : partialProducts) {
           int saneProducts = 0;
-          for (size_t product_idx = 0;
-               product_idx < partialProducts[productTemplate_idx].size();
-               ++product_idx) {
+          for (auto &product_idx : partialProduct) {
             try {
-              RWMol *m = dynamic_cast<RWMol *>(
-                  partialProducts[productTemplate_idx][product_idx].get());
+              RWMol *m = dynamic_cast<RWMol *>(product_idx.get());
               MolOps::sanitizeMol(*m);
               saneProducts++;
             } catch (...) {
@@ -236,8 +231,8 @@ boost::uint64_t computeNumProducts(const RGROUPS &sizes) {
 #ifdef RDK_HAVE_MULTIPREC
   boost::multiprecision::cpp_int myint = 1;
 
-  for (size_t i = 0; i < sizes.size(); ++i) {
-    myint *= sizes[i];
+  for (boost::uint64_t size : sizes) {
+    myint *= size;
   }
 
   if (myint < std::numeric_limits<boost::uint64_t>::max())

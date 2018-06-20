@@ -321,7 +321,7 @@ struct bond_wrapper {
     bondClassDoc =
         "The class to store QueryBonds.\n\
 These cannot currently be constructed directly from Python\n";
-    python::class_<QueryBond, python::bases<Bond> >(
+    python::class_<QueryBond, python::bases<Bond>>(
         "QueryBond", bondClassDoc.c_str(), python::no_init);
   };
 };

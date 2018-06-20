@@ -8,6 +8,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/export.h>
 #include <ForceField/ForceField.h>
 #include <GraphMol/ForceFieldHelpers/MMFF/AtomTyper.h>
 #include <ForceField/MMFF/Params.h>
@@ -18,6 +19,7 @@
 #include <algorithm>
 #include <Geometry/point.h>
 
+namespace python = boost::python;
 namespace ForceFields {
 class PyForceField {
  public:
@@ -45,10 +47,15 @@ class PyForceField {
     return idx;
   }
 
+  double calcEnergyWithPos(const python::object &pos = python::object());
+
   double calcEnergy() {
-    PRECONDITION(this->field, "no force field");
-    return this->field->calcEnergy();
+    return calcEnergyWithPos();
   }
+
+  PyObject *calcGradWithPos(const python::object &pos = python::object());
+
+  PyObject *positions();
 
   int minimize(int maxIts, double forceTol, double energyTol) {
     PRECONDITION(this->field, "no force field");
@@ -61,6 +68,16 @@ class PyForceField {
     PRECONDITION(this->field, "no force field");
     this->field->initialize();
   }
+
+  unsigned int dimension() {
+    PRECONDITION(this->field, "no force field");
+    return this->field->dimension();
+  }  
+
+  unsigned int numPoints() {
+    PRECONDITION(this->field, "no force field");
+    return this->field->numPoints();
+  }  
 
   // private:
   std::vector<boost::shared_ptr<RDGeom::Point3D> > extraPoints;

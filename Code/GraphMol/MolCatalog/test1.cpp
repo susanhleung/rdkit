@@ -2,6 +2,7 @@
 //
 //  Copyright (C) 2006 Greg Landrum
 //
+#include <RDBoost/test.h>
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/RDKitQueries.h>
 #include <RDGeneral/RDLog.h>
@@ -27,11 +28,11 @@ void test1() {
   BOOST_LOG(rdInfoLog) << ">>------------- Test 1" << std::endl;
 
   // MolCatalogParams are currently unused, so testing is easy:
-  MolCatalogParams *mparams = new MolCatalogParams();
+  auto *mparams = new MolCatalogParams();
   std::string pkl = mparams->Serialize();
   TEST_ASSERT(pkl == "");
 
-  MolCatalog *mcat = new MolCatalog(mparams);
+  auto *mcat = new MolCatalog(mparams);
   TEST_ASSERT(mcat->getNumEntries() == 0);
   TEST_ASSERT(mcat->getFPLength() == 0);
 

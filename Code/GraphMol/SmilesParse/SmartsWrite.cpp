@@ -1,6 +1,5 @@
-// $Id$
 //
-//  Copyright (C) 2002-2008 Greg Landrum and Rational Discovery LLC
+//  Copyright (C) 2002-2018 Greg Landrum and Rational Discovery LLC
 //
 //   @@ All Rights Reserved @@
 //  This file is part of the RDKit.
@@ -10,6 +9,8 @@
 //
 #include "SmartsWrite.h"
 #include <sstream>
+#include <cstdint>
+#include <boost/algorithm/string.hpp>
 #include "SmilesWrite.h"
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/RDKitQueries.h>
@@ -23,7 +24,8 @@ using namespace Canon;
 // local utility namespace
 namespace {
 
-std::string _recurseGetSmarts(const QueryAtom::QUERYATOM_QUERY *node,
+std::string _recurseGetSmarts(const QueryAtom *qatom,
+                              const QueryAtom::QUERYATOM_QUERY *node,
                               bool negate);
 std::string _recurseBondSmarts(const Bond *bond,
                                const QueryBond::QUERYBOND_QUERY *node,
@@ -121,36 +123,56 @@ std::string smartsOrganicAtom(const QueryAtom::QUERYATOM_QUERY *child1,
   }
   return res;
 }
-
-std::string getAtomSmartsSimple(const ATOM_EQUALS_QUERY *query,
+const static std::string _qatomHasStereoSet = "_qatomHasStereoSet";
+std::string getAtomSmartsSimple(const QueryAtom *qatom,
+                                const ATOM_EQUALS_QUERY *query,
                                 bool &needParen) {
   PRECONDITION(query, "bad query");
 
   std::string descrip = query->getDescription();
+  bool hasVal = false;
+  enum class Modifiers : std::uint8_t { NONE, RANGE, LESS, GREATER };
+  Modifiers mods = Modifiers::NONE;
+  if (boost::starts_with(descrip, "range_")) {
+    mods = Modifiers::RANGE;
+    descrip = descrip.substr(6);
+  } else if (boost::starts_with(descrip, "less_")) {
+    mods = Modifiers::LESS;
+    descrip = descrip.substr(5);
+  } else if (boost::starts_with(descrip, "greater_")) {
+    mods = Modifiers::GREATER;
+    descrip = descrip.substr(8);
+  }
   std::stringstream res;
   if (descrip == "AtomImplicitHCount") {
-    res << "h" << query->getVal();
+    res << "h";
+    hasVal = true;
     needParen = true;
   } else if (descrip == "AtomHasImplicitH") {
     res << "h";
     needParen = true;
   } else if (descrip == "AtomTotalValence") {
-    res << "v" << query->getVal();
+    res << "v";
+    hasVal = true;
     needParen = true;
   } else if (descrip == "AtomAtomicNum") {
-    res << "#" << query->getVal();
+    res << "#";
+    hasVal = true;
     needParen = true;
   } else if (descrip == "AtomExplicitDegree") {
-    res << "D" << query->getVal();
+    res << "D";
+    hasVal = true;
     needParen = true;
   } else if (descrip == "AtomTotalDegree") {
-    res << "X" << query->getVal();
+    res << "X";
+    hasVal = true;
     needParen = true;
   } else if (descrip == "AtomHasRingBond") {
     res << "x";
     needParen = true;
   } else if (descrip == "AtomHCount") {
-    res << "H" << query->getVal();
+    res << "H";
+    hasVal = true;
     needParen = true;
   } else if (descrip == "AtomIsAliphatic") {
     res << "A";
@@ -165,13 +187,28 @@ std::string getAtomSmartsSimple(const ATOM_EQUALS_QUERY *query,
     res << "R";
     needParen = true;
   } else if (descrip == "AtomMinRingSize") {
-    res << "r" << query->getVal();
+    res << "r";
+    hasVal = true;
     needParen = true;
   } else if (descrip == "AtomInNRings") {
     res << "R";
-    if (query->getVal() >= 0) {
-      res << query->getVal();
+    if (mods == Modifiers::NONE && query->getVal() >= 0) {
+      hasVal = true;
     }
+    needParen = true;
+  } else if (descrip == "AtomHasHeteroatomNeighbors") {
+    res << "z";
+    needParen = true;
+  } else if (descrip == "AtomNumHeteroatomNeighbors") {
+    res << "z";
+    hasVal = true;
+    needParen = true;
+  } else if (descrip == "AtomHasAliphaticHeteroatomNeighbors") {
+    res << "Z";
+    needParen = true;
+  } else if (descrip == "AtomNumAliphaticHeteroatomNeighbors") {
+    res << "Z";
+    hasVal = true;
     needParen = true;
   } else if (descrip == "AtomFormalCharge") {
     int val = query->getVal();
@@ -199,6 +236,12 @@ std::string getAtomSmartsSimple(const ATOM_EQUALS_QUERY *query,
       case Atom::SP3:
         res << "3";
         break;
+      case Atom::SP3D:
+        res << "4";
+        break;
+      case Atom::SP3D2:
+        res << "5";
+        break;
     }
   } else if (descrip == "AtomMass") {
     res << query->getVal() / massIntegerConversionFactor << "*";
@@ -210,7 +253,8 @@ std::string getAtomSmartsSimple(const ATOM_EQUALS_QUERY *query,
     res << "x";
     needParen = true;
   } else if (descrip == "AtomRingBondCount") {
-    res << "x" << query->getVal();
+    res << "x";
+    hasVal = true;
     needParen = true;
   } else if (descrip == "AtomUnsaturated") {
     res << "$(*=,:,#*)";
@@ -221,6 +265,49 @@ std::string getAtomSmartsSimple(const ATOM_EQUALS_QUERY *query,
         << ". Ignoring it." << std::endl;
     res << "*";
   }
+
+  if (mods != Modifiers::NONE) {
+    res << "{";
+    switch (mods) {
+      case Modifiers::LESS:
+        res << ((const ATOM_LESSEQUAL_QUERY *)query)->getVal() << "-";
+        break;
+      case Modifiers::RANGE:
+        res << ((const ATOM_RANGE_QUERY *)query)->getLower() << "-"
+            << ((const ATOM_RANGE_QUERY *)query)->getUpper();
+        break;
+      case Modifiers::GREATER:
+        res << "-" << ((const ATOM_GREATEREQUAL_QUERY *)query)->getVal();
+        break;
+      default:
+        break;
+    }
+    res << "}";
+  } else if (hasVal) {
+    res << query->getVal();
+  }
+
+  // handle atomic stereochemistry
+  if (qatom->getOwningMol().hasProp(common_properties::_doIsoSmiles)) {
+    if (qatom->getChiralTag() != Atom::CHI_UNSPECIFIED &&
+        !qatom->hasProp(_qatomHasStereoSet) &&
+        !qatom->hasProp(common_properties::_brokenChirality)) {
+      qatom->setProp(_qatomHasStereoSet, 1);
+      switch (qatom->getChiralTag()) {
+        case Atom::CHI_TETRAHEDRAL_CW:
+          res << "@@";
+          needParen = true;
+          break;
+        case Atom::CHI_TETRAHEDRAL_CCW:
+          res << "@";
+          needParen = true;
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
   return res.str();
 }
 
@@ -285,7 +372,8 @@ std::string getBondSmartsSimple(const Bond *bond,
   return res;
 }
 
-std::string _recurseGetSmarts(const QueryAtom::QUERYATOM_QUERY *node,
+std::string _recurseGetSmarts(const QueryAtom *qatom,
+                              const QueryAtom::QUERYATOM_QUERY *node,
                               bool negate) {
   PRECONDITION(node, "bad node");
   // the algorithm goes something like this
@@ -362,7 +450,7 @@ std::string _recurseGetSmarts(const QueryAtom::QUERYATOM_QUERY *node,
     // child 1 is a simple node
     const ATOM_EQUALS_QUERY *tchild =
         static_cast<const ATOM_EQUALS_QUERY *>(child1);
-    csmarts1 = getAtomSmartsSimple(tchild, needParen);
+    csmarts1 = getAtomSmartsSimple(qatom, tchild, needParen);
     bool nneg = (negate) ^ (tchild->getNegation());
     if (nneg) {
       csmarts1 = "!" + csmarts1;
@@ -370,7 +458,7 @@ std::string _recurseGetSmarts(const QueryAtom::QUERYATOM_QUERY *node,
   } else {
     // child 1 is composite node - recurse
     bool nneg = (negate) ^ (child1->getNegation());
-    csmarts1 = _recurseGetSmarts(child1, nneg);
+    csmarts1 = _recurseGetSmarts(qatom, child1, nneg);
   }
 
   // deal with the second child
@@ -380,14 +468,14 @@ std::string _recurseGetSmarts(const QueryAtom::QUERYATOM_QUERY *node,
     // child 2 is a simple node
     const ATOM_EQUALS_QUERY *tchild =
         static_cast<const ATOM_EQUALS_QUERY *>(child2);
-    csmarts2 = getAtomSmartsSimple(tchild, needParen);
+    csmarts2 = getAtomSmartsSimple(qatom, tchild, needParen);
     bool nneg = (negate) ^ (tchild->getNegation());
     if (nneg) {
       csmarts2 = "!" + csmarts2;
     }
   } else {
     bool nneg = (negate) ^ (child2->getNegation());
-    csmarts2 = _recurseGetSmarts(child2, nneg);
+    csmarts2 = _recurseGetSmarts(qatom, child2, nneg);
   }
 
   // ok if we have a negation and we have an OR , we have to change to
@@ -455,7 +543,7 @@ std::string _recurseBondSmarts(const Bond *bond,
     // child1 is  simple node get the smarts directly
     const BOND_EQUALS_QUERY *tchild =
         static_cast<const BOND_EQUALS_QUERY *>(child1);
-    csmarts1 = getBondSmartsSimple(bond,tchild, atomToLeftIdx);
+    csmarts1 = getBondSmartsSimple(bond, tchild, atomToLeftIdx);
     bool nneg = (negate) ^ (tchild->getNegation());
     if (nneg) {
       csmarts1 = "!" + csmarts1;
@@ -471,7 +559,7 @@ std::string _recurseBondSmarts(const Bond *bond,
     // child 2 is a simple node
     const BOND_EQUALS_QUERY *tchild =
         static_cast<const BOND_EQUALS_QUERY *>(child2);
-    csmarts2 = getBondSmartsSimple(bond,tchild, atomToLeftIdx);
+    csmarts2 = getBondSmartsSimple(bond, tchild, atomToLeftIdx);
     bool nneg = (negate) ^ (tchild->getNegation());
     if (nneg) {
       csmarts2 = "!" + csmarts2;
@@ -558,15 +646,34 @@ std::string getNonQueryAtomSmarts(const QueryAtom *qatom) {
   res << "[";
 
   int isotope = qatom->getIsotope();
-  if(isotope){
-    res<<isotope;
+  if (isotope) {
+    res << isotope;
   }
-  
+
   if (SmilesWrite::inOrganicSubset(qatom->getAtomicNum())) {
     res << "#" << qatom->getAtomicNum();
   } else {
     res << qatom->getSymbol();
   }
+
+  if (qatom->getOwningMol().hasProp(common_properties::_doIsoSmiles)) {
+    if (qatom->getChiralTag() != Atom::CHI_UNSPECIFIED &&
+        !qatom->hasProp(_qatomHasStereoSet) &&
+        !qatom->hasProp(common_properties::_brokenChirality)) {
+      qatom->setProp(_qatomHasStereoSet, 1);
+      switch (qatom->getChiralTag()) {
+        case Atom::CHI_TETRAHEDRAL_CW:
+          res << "@@";
+          break;
+        case Atom::CHI_TETRAHEDRAL_CCW:
+          res << "@";
+          break;
+        default:
+          break;
+      }
+    }
+  }
+
   int hs = qatom->getNumExplicitHs();
   // FIX: probably should be smarter about Hs:
   if (hs) {
@@ -599,6 +706,7 @@ std::string getNonQueryAtomSmarts(const QueryAtom *qatom) {
 std::string getNonQueryBondSmarts(const QueryBond *qbond, int atomToLeftIdx) {
   PRECONDITION(qbond, "bad bond");
   PRECONDITION(!qbond->hasQuery(), "bond should not have query");
+  RDUNUSED_PARAM(atomToLeftIdx);
   std::string res;
 
   if (qbond->getIsAromatic()) {
@@ -656,7 +764,7 @@ std::string GetAtomSmarts(const QueryAtom *qatom) {
   } else if ((descrip == "AtomOr") || (descrip == "AtomAnd")) {
     // we have a composite query
     needParen = true;
-    res = _recurseGetSmarts(query, query->getNegation());
+    res = _recurseGetSmarts(qatom, query, query->getNegation());
     if (res.length() == 1) {  // single atom symbol we don't need parens
       needParen = false;
     }
@@ -667,7 +775,7 @@ std::string GetAtomSmarts(const QueryAtom *qatom) {
   } else {  // we have a simple smarts
     ATOM_EQUALS_QUERY *tquery =
         static_cast<ATOM_EQUALS_QUERY *>(qatom->getQuery());
-    res = getAtomSmartsSimple(tquery, needParen);
+    res = getAtomSmartsSimple(qatom, tquery, needParen);
     if (tquery->getNegation()) {
       res = "!" + res;
     }
@@ -715,14 +823,13 @@ std::string GetBondSmarts(const QueryBond *bond, int atomToLeftIdx) {
     }
     const BOND_EQUALS_QUERY *tquery =
         static_cast<const BOND_EQUALS_QUERY *>(query);
-    res += getBondSmartsSimple(bond,tquery, atomToLeftIdx);
+    res += getBondSmartsSimple(bond, tquery, atomToLeftIdx);
   }
   return res;
 }
 }  // end of namespace SmartsWrite
 
 std::string MolToSmarts(ROMol &inmol, bool doIsomericSmiles) {
-  RDUNUSED_PARAM(doIsomericSmiles);  // does this parameter even make sense?
   std::string res;
   unsigned int nAtoms = inmol.getNumAtoms();
   if (!nAtoms) return "";
@@ -735,6 +842,12 @@ std::string MolToSmarts(ROMol &inmol, bool doIsomericSmiles) {
   for (ROMol::AtomIterator atIt = mol.beginAtoms(); atIt != mol.endAtoms();
        atIt++) {
     ranks.push_back((*atIt)->getIdx());
+  }
+
+  // clean up the chirality on any atom that is marked as chiral,
+  // but that should not be:
+  if (doIsomericSmiles) {
+    mol.setProp(common_properties::_doIsoSmiles, 1);
   }
 
   std::vector<AtomColors> colors;

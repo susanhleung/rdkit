@@ -10,6 +10,7 @@
 //
 
 // std bits
+#include <RDBoost/test.h>
 #include <iostream>
 
 // RD bits
@@ -51,7 +52,7 @@ void test1() {
   SDMolSupplier suppl(fName);
   SubstructLibrary ssslib;
   while (!suppl.atEnd()) {
-    ROMol *mol = 0;
+    ROMol *mol = nullptr;
     try {
       mol = suppl.next();
     } catch (...) {
@@ -89,14 +90,14 @@ void test2() {
   std::string fName = getenv("RDBASE");
   fName += "/Data/NCI/first_200.props.sdf";
   SDMolSupplier suppl(fName);
-  MolHolder *mols = new MolHolder();
-  PatternHolder *fps = new PatternHolder();
+  auto *mols = new MolHolder();
+  auto *fps = new PatternHolder();
   boost::shared_ptr<MolHolder> mols_ptr(mols);
   boost::shared_ptr<PatternHolder> fps_ptr(fps);
 
   SubstructLibrary ssslib(mols_ptr, fps_ptr);
   while (!suppl.atEnd()) {
-    ROMol *mol = 0;
+    ROMol *mol = nullptr;
     try {
       mol = suppl.next();
     } catch (...) {
@@ -123,15 +124,15 @@ void test3() {
   BOOST_LOG(rdErrorLog) << "    Test3 (stereo options)" << std::endl;
 
   SubstructLibrary ssslib(boost::make_shared<MolHolder>());
-  for(int i=0;i<10;++i) {
+  for (int i = 0; i < 10; ++i) {
     ROMol *m1 = SmilesToMol("C1CCO[C@@](N)(O)1");
     ROMol *m2 = SmilesToMol("C1CCO[C@](N)(O)1");
     ROMol *m3 = SmilesToMol("C1CCO[C@@](O)(N)1");
     ROMol *m4 = SmilesToMol("C1CCO[C@](O)(N)1");
-    ssslib.addMol( *m1 );
-    ssslib.addMol( *m2 );
-    ssslib.addMol( *m3 );
-    ssslib.addMol( *m4 );
+    ssslib.addMol(*m1);
+    ssslib.addMol(*m2);
+    ssslib.addMol(*m3);
+    ssslib.addMol(*m4);
     delete m1;
     delete m2;
     delete m3;
@@ -143,7 +144,7 @@ void test3() {
   TEST_ASSERT(res.size() == 40);
 
   delete query;
-  query = SmartsToMol("C-1-C-C-O-[C@@](-[O])(-[N])1")          ;
+  query = SmartsToMol("C-1-C-C-O-[C@@](-[O])(-[N])1");
 
   res = ssslib.getMatches(*query, true, true);
   TEST_ASSERT(res.size() == 20);
@@ -153,17 +154,17 @@ void test3() {
 
   delete query;
   BOOST_LOG(rdErrorLog) << "    Done (stereo options)" << std::endl;
-
 }
 
 void test4() {
   BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
   BOOST_LOG(rdErrorLog) << "    Test4 (trusted smiles)" << std::endl;
 
-  boost::shared_ptr<CachedSmilesMolHolder> holder = boost::make_shared<CachedSmilesMolHolder>();
+  boost::shared_ptr<CachedSmilesMolHolder> holder =
+      boost::make_shared<CachedSmilesMolHolder>();
   SubstructLibrary ssslib(holder);
-  
-  for(int i=0;i<10;++i) {
+
+  for (int i = 0; i < 10; ++i) {
     holder->addSmiles("C1CCO[C@@](N)(O)1");
     holder->addSmiles("C1CCO[C@](N)(O)1");
     holder->addSmiles("C1CCO[C@@](O)(N)1");
@@ -175,7 +176,7 @@ void test4() {
   TEST_ASSERT(res.size() == 40);
 
   delete query;
-  query = SmartsToMol("C-1-C-C-O-[C@@](-[O])(-[N])1")          ;
+  query = SmartsToMol("C-1-C-C-O-[C@@](-[O])(-[N])1");
 
   res = ssslib.getMatches(*query, true, true);
   TEST_ASSERT(res.size() == 20);
@@ -185,7 +186,6 @@ void test4() {
 
   delete query;
   BOOST_LOG(rdErrorLog) << "    Done (trusted smiles)" << std::endl;
-
 }
 
 /// Tests the code in the docs
@@ -203,50 +203,48 @@ void docTest() {
     SubstructLibrary lib;
     lib.addMol(mol);
     std::vector<unsigned int> results = lib.getMatches(query);
-    for(std::vector<unsigned int>::const_iterator matchIndex=results.begin();
-            matchIndex != results.end();
-            ++matchIndex) {
+    for (std::vector<unsigned int>::const_iterator matchIndex = results.begin();
+         matchIndex != results.end(); ++matchIndex) {
       boost::shared_ptr<ROMol> match = lib.getMol(*matchIndex);
     }
   }
 
   {
-    boost::shared_ptr<CachedTrustedSmilesMolHolder> molHolder = \
+    boost::shared_ptr<CachedTrustedSmilesMolHolder> molHolder =
         boost::make_shared<CachedTrustedSmilesMolHolder>();
-    boost::shared_ptr<PatternHolder> patternHolder =    \
+    boost::shared_ptr<PatternHolder> patternHolder =
         boost::make_shared<PatternHolder>();
-    
+
     SubstructLibrary lib(molHolder, patternHolder);
     lib.addMol(mol);
   }
 
   {
-    boost::shared_ptr<CachedTrustedSmilesMolHolder> molHolder = \
+    boost::shared_ptr<CachedTrustedSmilesMolHolder> molHolder =
         boost::make_shared<CachedTrustedSmilesMolHolder>();
-    boost::shared_ptr<PatternHolder> patternHolder =    \
+    boost::shared_ptr<PatternHolder> patternHolder =
         boost::make_shared<PatternHolder>();
-    
+
     // the PatternHolder instance is able to make fingerprints.
     //  These, of course, can be read from a file.  For demonstration
     //   purposes we construct them here.
     const std::string trustedSmiles = "c1ccccc1";
     ROMol *m = SmilesToMol(trustedSmiles);
     const ExplicitBitVect *bitVector = patternHolder->makeFingerprint(*m);
-    
+
     // The trusted smiles and bitVector can be read from any source.
     //  This is the fastest way to load a substruct library.
-    molHolder->addSmiles( trustedSmiles );
-    patternHolder->addFingerprint( *bitVector );
+    molHolder->addSmiles(trustedSmiles);
+    patternHolder->addFingerprint(*bitVector);
     SubstructLibrary lib(molHolder, patternHolder);
     delete m;
     delete bitVector;
   }
-  
+
   delete q;
   delete m;
   BOOST_LOG(rdErrorLog) << "    Done (C++ doc tests)" << std::endl;
 }
-
 
 int main(int argc, char *argv[]) {
 #if 1

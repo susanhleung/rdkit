@@ -7,6 +7,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/test.h>
 #include "../RDKitBase.h"
 #include "../FileParsers/FileParsers.h"  //MOL single molecule !
 #include "../FileParsers/MolSupplier.h"  //SDF
@@ -18,6 +19,7 @@
 #include "../../RDGeneral/BadFileException.h"
 
 #include "StructChecker.h"
+#include "StructCheckerOptions.h"
 #include "Stereo.h"
 #include "Pattern.h"
 
@@ -165,8 +167,8 @@ void test1() {
       TEST_ASSERT(ok);
   */
   StructChecker chk(options);
-  for (int i = 0; i < sizeof(smols) / sizeof(smols[0]); i++) {
-    RWMol* mol = SmilesToMol(smols[i]);
+  for (auto& smol : smols) {
+    RWMol* mol = SmilesToMol(smol);
     TEST_ASSERT(mol);
     unsigned flags = chk.checkMolStructure(*mol);
     delete mol;
@@ -192,8 +194,8 @@ void test2() {
   // options.Verbose = true;
 
   StructChecker chk(options);
-  for (int i = 0; i < sizeof(smols) / sizeof(smols[0]); i++) {
-    RWMol* mol = SmilesToMol(smols[i]);
+  for (auto& smol : smols) {
+    RWMol* mol = SmilesToMol(smol);
     TEST_ASSERT(mol);
     unsigned flags = chk.checkMolStructure(*mol);
     delete mol;
@@ -498,11 +500,6 @@ void testCheckAtomFiles() {
   BOOST_LOG(rdInfoLog) << "\tdone" << std::endl;
 }
 
-namespace RDKit {
-namespace StructureCheck {
-bool StringToAugmentedAtom(const char* str, AugmentedAtom& aa);
-}
-}
 void testCheckMatch() {
   BOOST_LOG(rdInfoLog) << "-------------------------------------\n";
   BOOST_LOG(rdInfoLog) << "testCheckMatch\n";
@@ -572,7 +569,7 @@ void testNitro() {
 
   ROMOL_SPTR mol(MolBlockToMol(nitro));
   RWMol* rwmol = dynamic_cast<RWMol*>(mol.get());
-  TEST_ASSERT(rwmol != 0);
+  TEST_ASSERT(rwmol != nullptr);
   unsigned flags = chk.checkMolStructure(*rwmol);
   // N+1 should match N+1(=N,O)(-N,O-1)(-C,N,S) but doesn't
   std::cerr << "flags " << flags << std::endl;
@@ -784,8 +781,8 @@ void testAugmentedAtomTranslationsToAtomListQuery() {
       "C(=O)C",
   };
   StructChecker chk(options);
-  for (int i = 0; i < sizeof(smols) / sizeof(smols[0]); i++) {
-    RWMol* mol = SmilesToMol(smols[i]);
+  for (auto& smol : smols) {
+    RWMol* mol = SmilesToMol(smol);
     TEST_ASSERT(mol);
     unsigned flags = chk.checkMolStructure(*mol);
     BOOST_LOG(rdInfoLog) << "FLAGs: "

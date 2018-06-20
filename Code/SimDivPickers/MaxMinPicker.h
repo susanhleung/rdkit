@@ -8,6 +8,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/export.h>
 #ifndef RD_MAXMINPICKER_H
 #define RD_MAXMINPICKER_H
 
@@ -23,7 +24,7 @@
 namespace RDPickers {
 
 namespace {
-class distmatFunctor {
+class RDKIT_SIMDIVPICKERS_EXPORT distmatFunctor {
  public:
   distmatFunctor(const double *distMat) : dp_distMat(distMat){};
   double operator()(unsigned int i, unsigned int j) {
@@ -43,7 +44,7 @@ class distmatFunctor {
  *  aimed at diversity. See documentation for "pick()" member function for the
  *algorithm details
  */
-class MaxMinPicker : public DistPicker {
+class RDKIT_SIMDIVPICKERS_EXPORT MaxMinPicker : public DistPicker {
  public:
   /*! \brief Default Constructor
    *
@@ -166,7 +167,7 @@ RDKit::INT_VECT MaxMinPicker::lazyPick(T &func, unsigned int poolSize,
 
   picks.reserve(pickSize);
   unsigned int picked = 0;  // picks.size()
-  unsigned int pick;
+  unsigned int pick = 0;
 
   // pick the first entry
   if (firstPicks.empty()) {

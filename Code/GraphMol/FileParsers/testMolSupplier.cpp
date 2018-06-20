@@ -8,11 +8,13 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/test.h>
 #include <GraphMol/RDKitBase.h>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <memory>
 
 #include "MolSupplier.h"
 #include "MolWriters.h"
@@ -88,7 +90,7 @@ int testMolSup() {
     TEST_ASSERT(i == 16);
   }
   {
-    std::ifstream *strm = new std::ifstream(fname.c_str());
+    auto *strm = new std::ifstream(fname.c_str());
     SDMolSupplier sdsup(strm, true);
     unsigned int i = 0;
     while (!sdsup.atEnd()) {
@@ -102,6 +104,33 @@ int testMolSup() {
     }
     TEST_ASSERT(i == 16);
   }
+#ifdef RDK_BUILD_COORDGEN_SUPPORT
+  {
+    fname = rdbase + "/Code/GraphMol/FileParsers/test_data/NCI_aids_few.mae";
+    MaeMolSupplier maesup(fname);
+    std::shared_ptr<ROMol> nmol;
+    for (unsigned int i = 0; i < 16; ++i) {
+      nmol.reset(maesup.next());
+      if (nmol) {
+        TEST_ASSERT(nmol->hasProp(common_properties::_Name));
+        TEST_ASSERT(nmol->getNumAtoms() > 0);
+        if (i == 0) {
+          auto smiles = MolToSmiles(*nmol);
+          TEST_ASSERT(smiles ==
+                      "CCC1=[O+][Cu]2([O+]=C(CC)C1)[O+]=C(CC)CC(CC)=[O+]2");
+        }
+      }
+    }
+    TEST_ASSERT(maesup.atEnd());
+    bool ok = false;
+    try {
+      maesup.next();
+    } catch (FileParseException &) {
+      ok = true;
+    }
+    TEST_ASSERT(ok);
+  }
+#endif  // RDK_BUILD_COORDGEN_SUPPORT
   return 1;
 }
 
@@ -508,7 +537,8 @@ void testSmilesSupFromText() {
   }
   TEST_ASSERT(failed);
   BOOST_LOG(rdErrorLog) << ">>> This may result in an infinite loop.  It "
-                           "should finish almost immediately:" << std::endl;
+                           "should finish almost immediately:"
+                        << std::endl;
   TEST_ASSERT(nSup2.length() == 4);
   BOOST_LOG(rdErrorLog) << "<<< done." << std::endl;
 
@@ -628,7 +658,7 @@ void testSDWriter() {
   std::string ofile =
       rdbase + "/Code/GraphMol/FileParsers/test_data/outNCI_few.sdf";
 
-  SDWriter *writer = new SDWriter(ofile);
+  auto *writer = new SDWriter(ofile);
 
   STR_VECT names;
 
@@ -804,7 +834,7 @@ void testCisTrans() {
   try {
     reader = new SDMolSupplier("cisTrans.sdf");
   } catch (FileParseException &) {
-    reader = 0;
+    reader = nullptr;
   }
   TEST_ASSERT(reader);
   while (!reader->atEnd()) {
@@ -830,13 +860,13 @@ void testStereoRound() {
   try {
     smiSup = new SmilesMolSupplier(infile, ",", 0, 1, false, true);
   } catch (FileParseException &) {
-    smiSup = 0;
+    smiSup = nullptr;
   }
   TEST_ASSERT(smiSup)
   std::map<std::string, std::string> nameSmi;
   std::string ofile =
       rdbase + "/Code/GraphMol/FileParsers/test_data/cdk2_stereo.sdf";
-  SDWriter *writer = new SDWriter(ofile);
+  auto *writer = new SDWriter(ofile);
   int count = 0;
 
   while (!smiSup->atEnd()) {
@@ -873,7 +903,7 @@ void testStereoRound() {
   try {
     reader = new SDMolSupplier(ofile);
   } catch (FileParseException &) {
-    reader = 0;
+    reader = nullptr;
   }
   TEST_ASSERT(reader);
   count = 0;
@@ -1452,7 +1482,7 @@ void testSDErrorHandling() {
   std::string fname =
       rdbase + "/Code/GraphMol/FileParsers/test_data/sdErrors1.sdf";
   SDMolSupplier *sdsup;
-  ROMol *nmol = 0;
+  ROMol *nmol = nullptr;
 
   // entry 1: bad properties
   sdsup = new SDMolSupplier(fname);
@@ -1496,7 +1526,7 @@ void testIssue381() {
       rdbase + "/Code/GraphMol/FileParsers/test_data/Issue381.sdf";
   SDMolSupplier *sdsup;
 
-  ROMol *nmol = 0;
+  ROMol *nmol = nullptr;
   int count;
 
   // entry 1: bad properties
@@ -1537,7 +1567,7 @@ void testSetStreamIndices() {
   ifs.close();
   SDMolSupplier *sdsup;
 
-  ROMol *nmol = 0;
+  ROMol *nmol = nullptr;
   int count;
 
   sdsup = new SDMolSupplier(fname);
@@ -1657,7 +1687,7 @@ int testMixIterAndRandom() {
 
   nSup = new SmilesMolSupplier(fname, ",", 1, 0, false);
   TEST_ASSERT(nSup);
-  mol = 0;
+  mol = nullptr;
   try {
     mol = (*nSup)[20];
     ok = false;
@@ -1711,7 +1741,7 @@ int testMixIterAndRandom() {
 
   tSup = new TDTMolSupplier(fname);
   TEST_ASSERT(tSup);
-  mol = 0;
+  mol = nullptr;
   try {
     mol = (*tSup)[20];
     ok = false;
@@ -2016,7 +2046,8 @@ int testForwardSDSupplier() {
   }
   {
     io::filtering_istream strm;
-    // the stream must be opened in binary mode otherwise it won't work on Windows
+    // the stream must be opened in binary mode otherwise it won't work on
+    // Windows
     std::ifstream is(fname2.c_str(), std::ios_base::binary);
     strm.push(io::gzip_decompressor());
     strm.push(is);
@@ -2033,7 +2064,8 @@ int testForwardSDSupplier() {
   // looks good, now do a supplier:
   {
     io::filtering_istream strm;
-    // the stream must be opened in binary mode otherwise it won't work on Windows
+    // the stream must be opened in binary mode otherwise it won't work on
+    // Windows
     std::ifstream is(fname2.c_str(), std::ios_base::binary);
     strm.push(io::gzip_decompressor());
     strm.push(is);
@@ -2051,6 +2083,64 @@ int testForwardSDSupplier() {
     }
     TEST_ASSERT(i == 16);
   }
+
+#ifdef RDK_BUILD_COORDGEN_SUPPORT
+  // Now test that Maestro parsing of gz files works
+  std::string maefname =
+      rdbase + "/Code/GraphMol/FileParsers/test_data/NCI_aids_few.mae";
+  std::string maefname2 =
+      rdbase + "/Code/GraphMol/FileParsers/test_data/NCI_aids_few.maegz";
+  {
+    io::filtering_istream strm;
+    strm.push(io::file_source(maefname));
+
+    unsigned int i = 0;
+    while (!strm.eof()) {
+      std::string line;
+      std::getline(strm, line);
+      if (!strm.eof()) ++i;
+      if (i > 1700) break;
+    }
+    TEST_ASSERT(i == 1663);
+  }
+  {
+    io::filtering_istream strm;
+    // the stream must be opened in binary mode otherwise it won't work on
+    // Windows
+    std::ifstream is(maefname2.c_str(), std::ios_base::binary);
+    strm.push(io::gzip_decompressor());
+    strm.push(is);
+
+    unsigned int i = 0;
+    while (!strm.eof()) {
+      std::string line;
+      std::getline(strm, line);
+      if (!strm.eof()) ++i;
+      if (i > 1700) break;
+    }
+    TEST_ASSERT(i == 1663);
+  }
+  // looks good, now do a supplier:
+  {
+    io::filtering_istream strm;
+    // the stream must be opened in binary mode otherwise it won't work on
+    // Windows
+    std::ifstream is(maefname2.c_str(), std::ios_base::binary);
+    strm.push(io::gzip_decompressor());
+    strm.push(is);
+    MaeMolSupplier maesup(&strm, false);
+    unsigned int i = 0;
+    std::shared_ptr<ROMol> nmol;
+    while (!maesup.atEnd()) {
+      nmol.reset(maesup.next());
+      if (nmol != nullptr) {
+        i++;
+      }
+    }
+    TEST_ASSERT(i == 16);
+  }
+#endif  // RDK_BUILD_COORDGEN_SUPPORT
+
 #endif
   return 1;
 }
@@ -2159,7 +2249,7 @@ void testSkipLines() {
 void testGitHub23() {
   std::string rdbase = getenv("RDBASE");
   std::string ofile = rdbase + "/Code/GraphMol/FileParsers/test_data/blah.sdf";
-  SDWriter *writer = new SDWriter(ofile);
+  auto *writer = new SDWriter(ofile);
 
   ROMol *mol = SmilesToMol("CCCC");
   INT_VECT iv;

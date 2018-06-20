@@ -8,6 +8,7 @@
 //
 //  Contribution from Roger Sayle
 #include <vector>
+#include "MACCS.h"
 #include <DataStructs/ExplicitBitVect.h>
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/SmilesParse/SmilesParse.h>
@@ -655,7 +656,7 @@ void GenerateFP(const RDKit::ROMol &mol, ExplicitBitVect &fp) {
 namespace RDKit {
 namespace MACCSFingerprints {
 ExplicitBitVect *getFingerprintAsBitVect(const ROMol &mol) {
-  ExplicitBitVect *fp = new ExplicitBitVect(167);
+  auto *fp = new ExplicitBitVect(167);
   GenerateFP(mol, *fp);
   return fp;
 }

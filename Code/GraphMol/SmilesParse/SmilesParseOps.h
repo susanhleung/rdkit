@@ -7,6 +7,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/export.h>
 #ifndef _RD_SMILESPARSEOPS_H
 #define _RD_SMILESPARSEOPS_H
 #include <GraphMol/Bond.h>
@@ -29,7 +30,10 @@ RDKit::Bond::BondType GetUnspecifiedBondType(const RDKit::RWMol *mol,
 void CloseMolRings(RDKit::RWMol *mol, bool toleratePartials);
 void AdjustAtomChiralityFlags(RDKit::RWMol *mol);
 void CleanupAfterParsing(RDKit::RWMol *mol);
-void parseCXExtensions(RDKit::RWMol &mol, const std::string &extText, std::string::const_iterator &pos);
+void parseCXExtensions(RDKit::RWMol &mol, const std::string &extText,
+                       std::string::const_iterator &pos);
+//! removes formal charge, isotope, etc. Primarily useful for QueryAtoms
+void ClearAtomChemicalProps(RDKit::Atom *atom);
 };
 
 #endif

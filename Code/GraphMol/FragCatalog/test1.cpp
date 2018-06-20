@@ -8,6 +8,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/test.h>
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/RDKitQueries.h>
 #include <RDGeneral/RDLog.h>
@@ -94,7 +95,7 @@ void test1() {
       rdbase + "/Code/GraphMol/FragCatalog/test_data/funcGroups.txt";
   SmilesMolSupplier suppl(fname, " ", 0, 1, false);
 
-  FragCatParams *fparams = new FragCatParams(1, 6, fgrpFile, 1.0e-8);
+  auto *fparams = new FragCatParams(1, 6, fgrpFile, 1.0e-8);
   TEST_ASSERT(fparams->getNumFuncGroups() == 15);
   FragCatalog fcat(fparams);
   FragCatGenerator catGen;
@@ -109,7 +110,7 @@ void test1() {
     try {
       m = suppl.next();
     } catch (FileParseException &) {
-      m = NULL;
+      m = nullptr;
     }
   }
   TEST_ASSERT(mols.size() == 16);
@@ -138,7 +139,7 @@ void test1() {
 
   // make sure we can pickle and unpickle catalog entries:
   const FragCatalogEntry *fpEntry = fcat.getEntryWithIdx(0);
-  FragCatalogEntry *fpEntry2 = new FragCatalogEntry();
+  auto *fpEntry2 = new FragCatalogEntry();
   fpEntry2->initFromString(fpEntry->Serialize());
   TEST_ASSERT(fpEntry->getDescription() == fpEntry2->getDescription());
   TEST_ASSERT(fpEntry->getOrder() == fpEntry2->getOrder());
@@ -215,7 +216,7 @@ void testIssue294() {
       rdbase + "/Code/GraphMol/FragCatalog/test_data/funcGroups.txt";
   SmilesMolSupplier suppl(fname, " ", 0, 1, false);
 
-  FragCatParams *fparams = new FragCatParams(1, 6, fgrpFile, 1.0e-8);
+  auto *fparams = new FragCatParams(1, 6, fgrpFile, 1.0e-8);
   FragCatalog fcat(fparams);
   FragCatGenerator catGen;
 
@@ -227,7 +228,7 @@ void testIssue294() {
     try {
       m = suppl.next();
     } catch (FileParseException &) {
-      m = NULL;
+      m = nullptr;
     }
   }
   int nents = fcat.getNumEntries();

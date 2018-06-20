@@ -67,10 +67,9 @@ class ComputedData {
  public:
   ComputedData(unsigned int nAtoms, unsigned int nBonds) {
     bondLengths.resize(nBonds);
-    RDNumeric::IntSymmMatrix *bAdj = new RDNumeric::IntSymmMatrix(nBonds, -1);
+    auto *bAdj = new RDNumeric::IntSymmMatrix(nBonds, -1);
     bondAdj.reset(bAdj);
-    RDNumeric::DoubleSymmMatrix *bAngles =
-        new RDNumeric::DoubleSymmMatrix(nBonds, -1.0);
+    auto *bAngles = new RDNumeric::DoubleSymmMatrix(nBonds, -1.0);
     bondAngles.reset(bAngles);
     cisPaths.resize(nBonds * nBonds * nBonds);
     transPaths.resize(nBonds * nBonds * nBonds);
@@ -444,12 +443,12 @@ void set13Bounds(const ROMol &mol, DistGeom::BoundsMatPtr mmat,
       //  system
 
       while (beg1 != end1) {
-        const BOND_SPTR bnd1 = mol[*beg1];
+        const Bond* bnd1 = mol[*beg1];
         bid1 = bnd1->getIdx();
         aid1 = bnd1->getOtherAtomIdx(aid2);
         boost::tie(beg2, end2) = mol.getAtomBonds(atom);
         while (beg2 != beg1) {
-          const BOND_SPTR bnd2 = mol[*beg2];
+          const Bond* bnd2 = mol[*beg2];
           bid2 = bnd2->getIdx();
           // invar = firstThousandPrimes[bid1]*firstThousandPrimes[bid2];
           if (accumData.bondAngles->getVal(bid1, bid2) < 0.0) {
@@ -500,12 +499,12 @@ void set13Bounds(const ROMol &mol, DistGeom::BoundsMatPtr mmat,
     } else if (visited[aid2] == 0) {
       // non-ring atoms - we will simply use angles based on hydridization
       while (beg1 != end1) {
-        const BOND_SPTR bnd1 = mol[*beg1];
+        const Bond* bnd1 = mol[*beg1];
         bid1 = bnd1->getIdx();
         aid1 = bnd1->getOtherAtomIdx(aid2);
         boost::tie(beg2, end2) = mol.getAtomBonds(atom);
         while (beg2 != beg1) {
-          const BOND_SPTR bnd2 = mol[*beg2];
+          const Bond* bnd2 = mol[*beg2];
           bid2 = bnd2->getIdx();
           if (ahyb == Atom::SP) {
             angle = M_PI;
@@ -1172,12 +1171,12 @@ void set14Bounds(const ROMol &mol, DistGeom::BoundsMatPtr mmat,
     aid3 = (*bi)->getEndAtomIdx();
     boost::tie(beg1, end1) = mol.getAtomBonds(mol.getAtomWithIdx(aid2));
     while (beg1 != end1) {
-      const Bond *bnd1 = mol[*beg1].get();
+      const Bond *bnd1 = mol[*beg1];
       bid1 = bnd1->getIdx();
       if (bid1 != bid2) {
         boost::tie(beg2, end2) = mol.getAtomBonds(mol.getAtomWithIdx(aid3));
         while (beg2 != end2) {
-          const Bond *bnd3 = mol[*beg2].get();
+          const Bond *bnd3 = mol[*beg2];
           bid3 = bnd3->getIdx();
           if (bid3 != bid2) {
             id1 = nb * nb * bid1 + nb * bid2 + bid3;
@@ -1256,7 +1255,7 @@ void setTopolBounds(const ROMol &mol, DistGeom::BoundsMatPtr mmat,
     throw ValueErrorException("molecule has no atoms");
   }
   ComputedData accumData(na, nb);
-  double *distMatrix = 0;
+  double *distMatrix = nullptr;
   distMatrix = MolOps::getDistanceMat(mol);
 
   set12Bounds(mol, mmat, accumData);
@@ -1284,7 +1283,7 @@ void setTopolBounds(const ROMol &mol, DistGeom::BoundsMatPtr mmat,
     throw ValueErrorException("molecule has no atoms");
   }
   ComputedData accumData(na, nb);
-  double *distMatrix = 0;
+  double *distMatrix = nullptr;
   distMatrix = MolOps::getDistanceMat(mol);
 
   set12Bounds(mol, mmat, accumData);

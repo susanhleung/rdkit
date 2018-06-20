@@ -9,6 +9,7 @@
 //  of the RDKit source tree.
 //
 
+#include <RDBoost/export.h>
 #ifndef __RD_INVARIANT_H__
 #define __RD_INVARIANT_H__
 
@@ -47,7 +48,7 @@
 
 namespace Invar {
 
-class Invariant : public std::runtime_error {
+class RDKIT_RDGENERAL_EXPORT Invariant : public std::runtime_error {
  public:
   Invariant(const char* prefix, const char* mess, const char* expr,
             const char* const file, int line)
@@ -85,7 +86,7 @@ class Invariant : public std::runtime_error {
 
   int line_d;
 };
-std::ostream& operator<<(std::ostream& s, const Invariant& inv);
+RDKIT_RDGENERAL_EXPORT std::ostream& operator<<(std::ostream& s, const Invariant& inv);
 }  // end of namespace Invar
 
 #define ASSERT_INVARIANT(expr, mess) assert(expr)
@@ -140,7 +141,7 @@ std::ostream& operator<<(std::ostream& s, const Invariant& inv);
 #define URANGE_CHECK(x, hi)                                                 \
   if (x >= (hi)) {                                                          \
     std::stringstream errstr;                                               \
-    errstr << x << " < " << hi;                                            \
+    errstr << x << " < " << hi;                                             \
     Invar::Invariant inv("Range Error", #x, errstr.str().c_str(), __FILE__, \
                          __LINE__);                                         \
     BOOST_LOG(rdErrorLog) << "\n\n****\n" << inv << "****\n\n";             \
@@ -163,7 +164,7 @@ std::ostream& operator<<(std::ostream& s, const Invariant& inv);
 #define UNDER_CONSTRUCTION(fn) assert(0);
 #define RANGE_CHECK(lo, x, hi) \
   assert((lo) <= (hi) && (x) >= (lo) && (x) <= (hi));
-#define URANGE_CHECK(lo, x, hi) assert((hi>0) && (x < hi));
+#define URANGE_CHECK(lo, x, hi) assert((hi > 0) && (x < hi));
 #define TEST_ASSERT(expr) assert(expr);
 
 #elif INVARIANT_SILENT_METHOD

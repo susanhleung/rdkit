@@ -42,8 +42,8 @@ namespace {
 template <class T>
 T getMaxProp(ChemicalReaction &rxn, const std::string &prop) {
   T max_atom = (T)0;
-  for (MOL_SPTR_VECT::iterator it = rxn.beginReactantTemplates();
-       it != rxn.endReactantTemplates(); ++it) {
+  for (auto it = rxn.beginReactantTemplates(); it != rxn.endReactantTemplates();
+       ++it) {
     for (ROMol::AtomIterator atIt = (*it)->beginAtoms();
          atIt != (*it)->endAtoms(); ++atIt) {
       Atom *atom = (*atIt);
@@ -54,8 +54,8 @@ T getMaxProp(ChemicalReaction &rxn, const std::string &prop) {
     }
   }
 
-  for (MOL_SPTR_VECT::iterator it = rxn.beginAgentTemplates();
-       it != rxn.endAgentTemplates(); ++it) {
+  for (auto it = rxn.beginAgentTemplates(); it != rxn.endAgentTemplates();
+       ++it) {
     for (ROMol::AtomIterator atIt = (*it)->beginAtoms();
          atIt != (*it)->endAtoms(); ++atIt) {
       Atom *atom = (*atIt);
@@ -66,8 +66,8 @@ T getMaxProp(ChemicalReaction &rxn, const std::string &prop) {
     }
   }
 
-  for (MOL_SPTR_VECT::iterator it = rxn.beginProductTemplates();
-       it != rxn.endProductTemplates(); ++it) {
+  for (auto it = rxn.beginProductTemplates(); it != rxn.endProductTemplates();
+       ++it) {
     for (ROMol::AtomIterator atIt = (*it)->beginAtoms();
          atIt != (*it)->endAtoms(); ++atIt) {
       Atom *atom = (*atIt);
@@ -128,7 +128,7 @@ struct AtomInfo {
 
     QueryAtom qatom(*atom);
     qatom.setProp(common_properties::_MolFileRLabel, rlabel);
-    std::string dLabel = "R" + boost::lexical_cast<std::string>(rlabel);
+    std::string dLabel = "R" + std::to_string(rlabel);
     qatom.setProp(common_properties::dummyLabel, dLabel);
     if (rlabel > 0 && rlabel < 999) {
       qatom.setIsotope(rlabel);
@@ -169,8 +169,8 @@ void fixRGroups(ChemicalReaction &rxn) {
   std::vector<AtomInfo> productAtomsToFix;
 
   unsigned int templateIdx = 0;
-  for (MOL_SPTR_VECT::iterator it = rxn.beginReactantTemplates();
-       it != rxn.endReactantTemplates(); ++it, ++templateIdx) {
+  for (auto it = rxn.beginReactantTemplates(); it != rxn.endReactantTemplates();
+       ++it, ++templateIdx) {
     for (ROMol::AtomIterator atIt = (*it)->beginAtoms();
          atIt != (*it)->endAtoms(); ++atIt) {
       Atom *atom = (*atIt);
@@ -180,8 +180,8 @@ void fixRGroups(ChemicalReaction &rxn) {
   }
 
   templateIdx = 0;
-  for (MOL_SPTR_VECT::iterator it = rxn.beginProductTemplates();
-       it != rxn.endProductTemplates(); ++it, ++templateIdx) {
+  for (auto it = rxn.beginProductTemplates(); it != rxn.endProductTemplates();
+       ++it, ++templateIdx) {
     for (ROMol::AtomIterator atIt = (*it)->beginAtoms();
          atIt != (*it)->endAtoms(); ++atIt) {
       Atom *atom = (*atIt);
@@ -224,7 +224,7 @@ void fixRGroups(ChemicalReaction &rxn) {
             rat.setAtomMap(max_atom_map + rat.bestGuessRLabel());
             pat.setAtomMap(max_atom_map + rat.bestGuessRLabel());
           }
-          pat.atom = NULL;  // don't match again
+          pat.atom = nullptr;  // don't match again
           break;
         }
       }
@@ -247,8 +247,8 @@ void fixAtomMaps(ChemicalReaction &rxn) {
 
   unsigned int templateIdx = 0;
 
-  for (MOL_SPTR_VECT::iterator it = rxn.beginReactantTemplates();
-       it != rxn.endReactantTemplates(); ++it, ++templateIdx) {
+  for (auto it = rxn.beginReactantTemplates(); it != rxn.endReactantTemplates();
+       ++it, ++templateIdx) {
     for (ROMol::AtomIterator atIt = (*it)->beginAtoms();
          atIt != (*it)->endAtoms(); ++atIt) {
       Atom *atom = (*atIt);
@@ -267,8 +267,8 @@ void fixAtomMaps(ChemicalReaction &rxn) {
   if (!potential_mappings.size()) return;  // everything is ok!
 
   templateIdx = 0;
-  for (MOL_SPTR_VECT::iterator it = rxn.beginProductTemplates();
-       it != rxn.endProductTemplates(); ++it, ++templateIdx) {
+  for (auto it = rxn.beginProductTemplates(); it != rxn.endProductTemplates();
+       ++it, ++templateIdx) {
     for (ROMol::AtomIterator atIt = (*it)->beginAtoms();
          atIt != (*it)->endAtoms(); ++atIt) {
       Atom *atom = (*atIt);
@@ -290,9 +290,9 @@ void fixAtomMaps(ChemicalReaction &rxn) {
 // might throw mol sanitization exception??? wrap in RxnSanitize?
 void fixReactantTemplateAromaticity(ChemicalReaction &rxn) {
   unsigned int ops;
-  for (MOL_SPTR_VECT::iterator it = rxn.beginReactantTemplates();
-       it != rxn.endReactantTemplates(); ++it) {
-    RWMol *rw = dynamic_cast<RWMol *>(it->get());
+  for (auto it = rxn.beginReactantTemplates(); it != rxn.endReactantTemplates();
+       ++it) {
+    RWMol * rw = dynamic_cast<RWMol*>(it->get());
     if (rw)
       sanitizeMol(*rw, ops, MolOps::SANITIZE_SETAROMATICITY);
     else
@@ -308,8 +308,8 @@ void fixHs(ChemicalReaction &rxn) {
 
     std::map<int, bool> mappedToNonHeavyProductAtom;
 
-    for (MOL_SPTR_VECT::iterator it = rxn.beginProductTemplates();
-         it != rxn.endProductTemplates(); ++it) {
+    for (auto it = rxn.beginProductTemplates(); it != rxn.endProductTemplates();
+         ++it) {
       int atomMap = 0;
       for (ROMol::AtomIterator atIt = (*it)->beginAtoms();
            atIt != (*it)->endAtoms(); ++atIt) {
@@ -325,7 +325,7 @@ void fixHs(ChemicalReaction &rxn) {
       }
     }
 
-    for (MOL_SPTR_VECT::iterator it = rxn.beginReactantTemplates();
+    for (auto it = rxn.beginReactantTemplates();
          it != rxn.endReactantTemplates(); ++it) {
       int atomMap = 0;
       for (ROMol::AtomIterator atIt = (*it)->beginAtoms();
@@ -352,9 +352,9 @@ void fixHs(ChemicalReaction &rxn) {
   }
 
   const bool mergeUnmappedOnly = true;
-  for (MOL_SPTR_VECT::iterator it = rxn.beginReactantTemplates();
-       it != rxn.endReactantTemplates(); ++it) {
-    RWMol *rw = dynamic_cast<RWMol *>(it->get());
+  for (auto it = rxn.beginReactantTemplates(); it != rxn.endReactantTemplates();
+       ++it) {
+    RWMol * rw = dynamic_cast<RWMol*>(it->get());
     if (rw) {
       MolOps::mergeQueryHs(*rw, mergeUnmappedOnly);
     } else
@@ -368,9 +368,9 @@ void adjustTemplates(ChemicalReaction &rxn,
     return;
   }
 
-  for (MOL_SPTR_VECT::iterator it = rxn.beginReactantTemplates();
-       it != rxn.endReactantTemplates(); ++it) {
-    RWMol *rw = dynamic_cast<RWMol *>(it->get());
+  for (auto it = rxn.beginReactantTemplates(); it != rxn.endReactantTemplates();
+       ++it) {
+    RWMol * rw = dynamic_cast<RWMol*>(it->get());
     if (rw)
       adjustQueryProperties(*rw, &params);
     else

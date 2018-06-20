@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2003-2017 Greg Landrum and Rational Discovery LLC
+//  Copyright (C) 2003-2018 Greg Landrum and Rational Discovery LLC
 //
 //   @@ All Rights Reserved @@
 //  This file is part of the RDKit.
@@ -26,7 +26,7 @@ Atom *getAtomNeighborNot(ROMol *mol, const Atom *atom, const Atom *other) {
   PRECONDITION(atom, "bad atom");
   PRECONDITION(atom->getDegree() > 1, "bad degree");
   PRECONDITION(other, "bad atom");
-  Atom *res = 0;
+  Atom *res = nullptr;
 
   ROMol::ADJ_ITER nbrIdx, endNbrs;
   boost::tie(nbrIdx, endNbrs) = mol->getAtomNeighbors(atom);
@@ -63,7 +63,7 @@ void setHydrogenCoords(ROMol *mol, unsigned int hydIdx, unsigned int heavyIdx) {
   RDGeom::Transform3D tform;
   RDGeom::Point3D heavyPos, hydPos;
 
-  const Atom *nbr1 = 0, *nbr2 = 0, *nbr3 = 0;
+  const Atom *nbr1 = nullptr, *nbr2 = nullptr, *nbr3 = nullptr;
   const Bond *nbrBond;
   ROMol::ADJ_ITER nbrIdx, endNbrs;
 
@@ -74,8 +74,8 @@ void setHydrogenCoords(ROMol *mol, unsigned int hydIdx, unsigned int heavyIdx) {
       // --------------------------------------------------------------------------
       dirVect.z = 1;
       // loop over the conformations and set the coordinates
-      for (ROMol::ConformerIterator cfi = mol->beginConformers();
-           cfi != mol->endConformers(); cfi++) {
+      for (auto cfi = mol->beginConformers(); cfi != mol->endConformers();
+           cfi++) {
         heavyPos = (*cfi)->getAtomPos(heavyIdx);
         hydPos = heavyPos + dirVect * bondLength;
         (*cfi)->setAtomPos(hydIdx, hydPos);
@@ -87,8 +87,8 @@ void setHydrogenCoords(ROMol *mol, unsigned int hydIdx, unsigned int heavyIdx) {
       //  One other neighbor:
       // --------------------------------------------------------------------------
       nbr1 = getAtomNeighborNot(mol, heavyAtom, hydAtom);
-      for (ROMol::ConformerIterator cfi = mol->beginConformers();
-           cfi != mol->endConformers(); ++cfi) {
+      for (auto cfi = mol->beginConformers(); cfi != mol->endConformers();
+           ++cfi) {
         heavyPos = (*cfi)->getAtomPos(heavyIdx);
         RDGeom::Point3D nbr1Pos = (*cfi)->getAtomPos(nbr1->getIdx());
         // get a normalized vector pointing away from the neighbor:
@@ -167,8 +167,8 @@ void setHydrogenCoords(ROMol *mol, unsigned int hydIdx, unsigned int heavyIdx) {
       }
       TEST_ASSERT(nbr1);
       TEST_ASSERT(nbr2);
-      for (ROMol::ConformerIterator cfi = mol->beginConformers();
-           cfi != mol->endConformers(); ++cfi) {
+      for (auto cfi = mol->beginConformers(); cfi != mol->endConformers();
+           ++cfi) {
         // start along the average of the two vectors:
         heavyPos = (*cfi)->getAtomPos(heavyIdx);
         nbr1Vect = heavyPos - (*cfi)->getAtomPos(nbr1->getIdx());
@@ -223,7 +223,7 @@ void setHydrogenCoords(ROMol *mol, unsigned int hydIdx, unsigned int heavyIdx) {
       if (heavyAtom->hasProp(common_properties::_CIPCode)) {
         // if the central atom is chiral, we'll order the neighbors
         // by CIP rank:
-        std::vector<std::pair<unsigned int, int> > nbrs;
+        std::vector<std::pair<unsigned int, int>> nbrs;
         while (nbrIdx != endNbrs) {
           if (*nbrIdx != hydIdx) {
             const Atom *tAtom = mol->getAtomWithIdx(*nbrIdx);
@@ -256,8 +256,8 @@ void setHydrogenCoords(ROMol *mol, unsigned int hydIdx, unsigned int heavyIdx) {
       TEST_ASSERT(nbr1);
       TEST_ASSERT(nbr2);
       TEST_ASSERT(nbr3);
-      for (ROMol::ConformerIterator cfi = mol->beginConformers();
-           cfi != mol->endConformers(); ++cfi) {
+      for (auto cfi = mol->beginConformers(); cfi != mol->endConformers();
+           ++cfi) {
         // use the average of the three vectors:
         heavyPos = (*cfi)->getAtomPos(heavyIdx);
         nbr1Vect = heavyPos - (*cfi)->getAtomPos(nbr1->getIdx());
@@ -328,8 +328,8 @@ void setHydrogenCoords(ROMol *mol, unsigned int hydIdx, unsigned int heavyIdx) {
       // FIX: figure out what to do here
       // --------------------------------------------------------------------------
       hydPos = heavyPos + dirVect * bondLength;
-      for (ROMol::ConformerIterator cfi = mol->beginConformers();
-           cfi != mol->endConformers(); ++cfi) {
+      for (auto cfi = mol->beginConformers(); cfi != mol->endConformers();
+           ++cfi) {
         (*cfi)->setAtomPos(hydIdx, hydPos);
       }
       break;
@@ -337,13 +337,12 @@ void setHydrogenCoords(ROMol *mol, unsigned int hydIdx, unsigned int heavyIdx) {
 }
 
 void AssignHsResidueInfo(RWMol &mol) {
-
   int max_serial = 0;
   unsigned int stopIdx = mol.getNumAtoms();
   for (unsigned int aidx = 0; aidx < stopIdx; ++aidx) {
-    AtomPDBResidueInfo *info = (AtomPDBResidueInfo *) (mol.getAtomWithIdx(aidx)->getMonomerInfo());
-    if (info &&
-        info->getMonomerType() == AtomMonomerInfo::PDBRESIDUE &&
+    AtomPDBResidueInfo *info =
+        (AtomPDBResidueInfo *)(mol.getAtomWithIdx(aidx)->getMonomerInfo());
+    if (info && info->getMonomerType() == AtomMonomerInfo::PDBRESIDUE &&
         info->getSerialNumber() > max_serial) {
       max_serial = info->getSerialNumber();
     }
@@ -362,31 +361,32 @@ void AssignHsResidueInfo(RWMol &mol) {
           // Make all Hs unique - increment id even for existing
           ++current_h_id;
           // skip if hyrogen already has PDB info
-          AtomPDBResidueInfo *h_info = (AtomPDBResidueInfo *)mol.getAtomWithIdx(*begin)->getMonomerInfo();
+          AtomPDBResidueInfo *h_info =
+              (AtomPDBResidueInfo *)mol.getAtomWithIdx(*begin)
+                  ->getMonomerInfo();
           if (h_info && h_info->getMonomerType() == AtomMonomerInfo::PDBRESIDUE)
             continue;
           // the hydrogens have unique names on residue basis (H1, H2, ...)
-          if(!current_info ||
-             current_info->getResidueNumber() != info->getResidueNumber() ||
-             current_info->getChainId() !=  info->getChainId()) {
+          if (!current_info ||
+              current_info->getResidueNumber() != info->getResidueNumber() ||
+              current_info->getChainId() != info->getChainId()) {
             current_h_id = 1;
             current_info = info;
           }
           std::string h_label = boost::lexical_cast<std::string>(current_h_id);
           if (h_label.length() > 3)
-            h_label = h_label.substr(h_label.length()-3, 3);
-          while (h_label.length() < 3)
-            h_label = h_label + " ";
+            h_label = h_label.substr(h_label.length() - 3, 3);
+          while (h_label.length() < 3) h_label = h_label + " ";
           h_label = "H" + h_label;
           // wrap around id to '3H12'
           h_label = h_label.substr(3, 1) + h_label.substr(0, 3);
-          AtomPDBResidueInfo *newInfo = new AtomPDBResidueInfo(h_label, max_serial, "", info->getResidueName(),
-                                                               info->getResidueNumber(), info->getChainId(), "",
-                                                               info->getIsHeteroAtom());
+          AtomPDBResidueInfo *newInfo = new AtomPDBResidueInfo(
+              h_label, max_serial, "", info->getResidueName(),
+              info->getResidueNumber(), info->getChainId(), "",
+              info->getIsHeteroAtom());
           mol.getAtomWithIdx(*begin)->setMonomerInfo(newInfo);
 
           ++max_serial;
-
         }
         ++begin;
       }
@@ -410,13 +410,13 @@ void addHs(RWMol &mol, bool explicitOnly, bool addCoords,
   // pre-allocate the necessary space on the conformations of the molecule
   // for their coordinates
   unsigned int numAddHyds = 0;
-  for (ROMol::AtomIterator at = mol.beginAtoms(); at != mol.endAtoms(); ++at) {
+  for (auto at : mol.atoms()) {
     if (!onlyOnAtoms ||
-        std::find(onlyOnAtoms->begin(), onlyOnAtoms->end(), (*at)->getIdx()) !=
+        std::find(onlyOnAtoms->begin(), onlyOnAtoms->end(), at->getIdx()) !=
             onlyOnAtoms->end()) {
-      numAddHyds += (*at)->getNumExplicitHs();
+      numAddHyds += at->getNumExplicitHs();
       if (!explicitOnly) {
-        numAddHyds += (*at)->getNumImplicitHs();
+        numAddHyds += at->getNumImplicitHs();
       }
     }
   }
@@ -425,8 +425,7 @@ void addHs(RWMol &mol, bool explicitOnly, bool addCoords,
   // loop over the conformations of the molecule and allocate new space
   // for the H locations (need to do this even if we aren't adding coords so
   // that the conformers have the correct number of atoms).
-  for (ROMol::ConformerIterator cfi = mol.beginConformers();
-       cfi != mol.endConformers(); ++cfi) {
+  for (auto cfi = mol.beginConformers(); cfi != mol.endConformers(); ++cfi) {
     (*cfi)->reserve(nSize);
   }
 
@@ -478,10 +477,63 @@ void addHs(RWMol &mol, bool explicitOnly, bool addCoords,
 
 ROMol *addHs(const ROMol &mol, bool explicitOnly, bool addCoords,
              const UINT_VECT *onlyOnAtoms, bool addResidueInfo) {
-  RWMol *res = new RWMol(mol);
+  auto *res = new RWMol(mol);
   addHs(*res, explicitOnly, addCoords, onlyOnAtoms, addResidueInfo);
   return static_cast<ROMol *>(res);
 };
+
+namespace {
+// returns whether or not an adjustment was made, in case we want that info
+bool adjustStereoAtomsIfRequired(RWMol &mol, const Atom *atom,
+                                 const Atom *heavyAtom) {
+  PRECONDITION(atom != nullptr, "bad atom");
+  PRECONDITION(heavyAtom != nullptr, "bad heavy atom");
+  // nothing we can do if the degree is only 2 (and we should have covered
+  // that earlier anyway)
+  if (heavyAtom->getDegree() == 2) return false;
+  const auto &cbnd =
+      mol.getBondBetweenAtoms(atom->getIdx(), heavyAtom->getIdx());
+  if (!cbnd) return false;
+  Bond *dblBond = nullptr;
+  for (const auto &nbri :
+       boost::make_iterator_range(mol.getAtomBonds(heavyAtom))) {
+    Bond *bnd = mol[nbri];
+    if (bnd->getBondType() == Bond::DOUBLE &&
+        bnd->getStereo() > Bond::STEREOANY) {
+      auto sAtomIt = std::find(bnd->getStereoAtoms().begin(),
+                               bnd->getStereoAtoms().end(), atom->getIdx());
+      if (sAtomIt != bnd->getStereoAtoms().end()) {
+        // sAtomIt points to the position of this atom's index in the list.
+        // find the index of another atom attached to the heavy atom and
+        // use it to update sAtomIt
+        unsigned int dblNbrIdx = bnd->getOtherAtomIdx(heavyAtom->getIdx());
+        for (const auto &nbri :
+             boost::make_iterator_range(mol.getAtomNeighbors(heavyAtom))) {
+          const auto &nbr = mol[nbri];
+          if (nbr->getIdx() == dblNbrIdx || nbr->getIdx() == atom->getIdx())
+            continue;
+          *sAtomIt = nbr->getIdx();
+          bool madeAdjustment = true;
+          switch (bnd->getStereo()) {
+            case Bond::STEREOCIS:
+              bnd->setStereo(Bond::STEREOTRANS);
+              break;
+            case Bond::STEREOTRANS:
+              bnd->setStereo(Bond::STEREOCIS);
+              break;
+            default:
+              // I think we shouldn't need to do anything with E and Z...
+              madeAdjustment = false;
+              break;
+          }
+          return madeAdjustment;
+        }
+      }
+    }
+  }
+  return false;
+}
+}  // end of anonymous namespace
 
 //
 //  This routine removes hydrogens (and bonds to them) from the molecular graph.
@@ -495,6 +547,8 @@ ROMol *addHs(const ROMol &mol, bool explicitOnly, bool addCoords,
 //     will not be removed.
 //   - two coordinate Hs, like the central H in C[H-]C, will not be removed
 //   - Hs connected to dummy atoms will not be removed
+//   - Hs that are part of the definition of double bond Stereochemistry
+//     will not be removed
 //
 void removeHs(RWMol &mol, bool implicitOnly, bool updateExplicitCount,
               bool sanitize) {
@@ -526,8 +580,25 @@ void removeHs(RWMol &mol, bool implicitOnly, bool updateExplicitCount,
                  atom->getDegree() == 1) {
         ROMol::ADJ_ITER begin, end;
         boost::tie(begin, end) = mol.getAtomNeighbors(atom);
-        if (mol.getAtomWithIdx(*begin)->getAtomicNum() > 1) {
+        auto nbr = mol.getAtomWithIdx(*begin);
+        if (nbr->getAtomicNum() > 1) {
           removeIt = true;
+          // we're connected to a non-dummy, non H atom. Check to see
+          // if the neighbor has a double bond and we're the only neighbor
+          // at this end.  This was part of github #1810
+          if (nbr->getDegree() == 2) {
+            for (const auto &nbri :
+                 boost::make_iterator_range(mol.getAtomBonds(nbr))) {
+              const Bond *bnd = mol[nbri];
+              if (bnd->getBondType() == Bond::DOUBLE &&
+                  (bnd->getStereo() > Bond::STEREOANY ||
+                   mol.getBondBetweenAtoms(atom->getIdx(), nbr->getIdx())
+                           ->getBondDir() > Bond::NONE)) {
+                removeIt = false;
+                break;
+              }
+            }
+          }
         }
       }
 
@@ -537,7 +608,7 @@ void removeHs(RWMol &mol, bool implicitOnly, bool updateExplicitCount,
         // note the assumption that the H only has one neighbor... I
         // feel no need to handle the case of hypervalent hydrogen!
         // :-)
-        const BOND_SPTR bond = mol[*beg];
+        const Bond *bond = mol[*beg];
         Atom *heavyAtom = bond->getOtherAtom(atom);
         int heavyAtomNum = heavyAtom->getAtomicNum();
         const INT_VECT &defaultVs =
@@ -596,29 +667,27 @@ void removeHs(RWMol &mol, bool implicitOnly, bool updateExplicitCount,
         if (bond->getBondDir() == Bond::UNKNOWN &&
             bond->getBeginAtomIdx() == heavyAtom->getIdx()) {
           heavyAtom->setProp(common_properties::_UnknownStereo, 1);
-        }
-
-        // if the direction is set on this bond and the atom it's connected to
-        // has no other single bonds with directions set, then we need to set
-        // direction on one of the other neighbors in order to avoid double bond
-        // stereochemistry possibly being lost. This was github #754
-        if (bond->getBondDir() == Bond::ENDDOWNRIGHT ||
-            bond->getBondDir() == Bond::ENDUPRIGHT) {
+        } else if (bond->getBondDir() == Bond::ENDDOWNRIGHT ||
+                   bond->getBondDir() == Bond::ENDUPRIGHT) {
+          // if the direction is set on this bond and the atom it's connected to
+          // has no other single bonds with directions set, then we need to set
+          // direction on one of the other neighbors in order to avoid double
+          // bond stereochemistry possibly being lost. This was github #754
           bool foundADir = false;
-          Bond *oBond = NULL;
+          Bond *oBond = nullptr;
           boost::tie(beg, end) = mol.getAtomBonds(heavyAtom);
           while (beg != end) {
             if (mol[*beg]->getIdx() != bond->getIdx() &&
                 mol[*beg]->getBondType() == Bond::SINGLE) {
               if (mol[*beg]->getBondDir() == Bond::NONE) {
-                oBond = mol[*beg].get();
+                oBond = mol[*beg];
               } else {
                 foundADir = true;
               }
             }
             ++beg;
           }
-          if (!foundADir && oBond != NULL) {
+          if (!foundADir && oBond != nullptr) {
             bool flipIt = (oBond->getBeginAtom() == heavyAtom) &&
                           (bond->getBeginAtom() == heavyAtom);
             if (flipIt) {
@@ -629,8 +698,12 @@ void removeHs(RWMol &mol, bool implicitOnly, bool updateExplicitCount,
               oBond->setBondDir(bond->getBondDir());
             }
           }
+        } else {
+          // if this atom is one of the stereoatoms for a double bond we need
+          // to switch the stereo atom on this end to be the other neighbor
+          // This was part of github #1810
+          adjustStereoAtomsIfRequired(mol, atom, heavyAtom);
         }
-
         mol.removeAtom(atom);
       } else {
         // only increment the atom idx if we don't remove the atom
@@ -667,7 +740,7 @@ void removeHs(RWMol &mol, bool implicitOnly, bool updateExplicitCount,
 
 ROMol *removeHs(const ROMol &mol, bool implicitOnly, bool updateExplicitCount,
                 bool sanitize) {
-  RWMol *res = new RWMol(mol);
+  auto *res = new RWMol(mol);
   try {
     removeHs(*res, implicitOnly, updateExplicitCount, sanitize);
   } catch (MolSanitizeException &se) {
@@ -739,7 +812,7 @@ bool isQueryH(const Atom *atom) {
   }
   return hasHQuery;
 }
-}
+}  // namespace
 
 //
 //  This routine removes explicit hydrogens (and bonds to them) from
@@ -805,7 +878,7 @@ void mergeQueryHs(RWMol &mol, bool mergeUnmappedOnly) {
           // it wasn't a query atom, we need to replace it so that we can add a
           // query:
           ATOM_EQUALS_QUERY *tmp = makeAtomNumQuery(atom->getAtomicNum());
-          QueryAtom *newAt = new QueryAtom;
+          auto *newAt = new QueryAtom;
           newAt->setQuery(tmp);
           mol.replaceAtom(atom->getIdx(), newAt);
           delete newAt;
@@ -862,7 +935,7 @@ void mergeQueryHs(RWMol &mol, bool mergeUnmappedOnly) {
   }
 };
 ROMol *mergeQueryHs(const ROMol &mol, bool mergeUnmappedOnly) {
-  RWMol *res = new RWMol(mol);
+  auto *res = new RWMol(mol);
   mergeQueryHs(*res, mergeUnmappedOnly);
   return static_cast<ROMol *>(res);
 };

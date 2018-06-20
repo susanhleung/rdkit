@@ -18,7 +18,7 @@
 #include <GraphMol/MolDraw2D/MolDraw2DSVG.h>
 #include <Geometry/point.h>
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
-#ifdef RDK_CAIRO_BUILD
+#ifdef RDK_BUILD_CAIRO_SUPPORT
 #include <cairo.h>
 #include <GraphMol/MolDraw2D/MolDraw2DCairo.h>
 #endif
@@ -40,7 +40,7 @@ void pyDictToColourMap(python::object pyo, ColourPalette &res) {
   }
 }
 ColourPalette *pyDictToColourMap(python::object pyo) {
-  ColourPalette *res = NULL;
+  ColourPalette *res = nullptr;
   if (pyo) {
     res = new ColourPalette;
     pyDictToColourMap(pyo, *res);
@@ -56,7 +56,7 @@ void pyDictToDoubleMap(python::object pyo, std::map<int, double> &res) {
   }
 }
 std::map<int, double> *pyDictToDoubleMap(python::object pyo) {
-  std::map<int, double> *res = NULL;
+  std::map<int, double> *res = nullptr;
   if (pyo) {
     res = new std::map<int, double>;
     pyDictToDoubleMap(pyo, *res);
@@ -89,14 +89,14 @@ void pyListToColourVec(python::object pyo, std::vector<DrawColour> &res) {
     res.push_back(pyTupleToDrawColour(tpl));
   }
 }
-}
+}  // namespace
 
 void drawMoleculeHelper1(MolDraw2D &self, const ROMol &mol,
                          python::object highlight_atoms,
                          python::object highlight_atom_map,
                          python::object highlight_atom_radii, int confId,
                          std::string legend) {
-  rdk_auto_ptr<std::vector<int> > highlightAtoms =
+  std::unique_ptr<std::vector<int>> highlightAtoms =
       pythonObjectToVect(highlight_atoms, static_cast<int>(mol.getNumAtoms()));
   ColourPalette *ham = pyDictToColourMap(highlight_atom_map);
   std::map<int, double> *har = pyDictToDoubleMap(highlight_atom_radii);
@@ -113,9 +113,9 @@ void drawMoleculeHelper2(MolDraw2D &self, const ROMol &mol,
                          python::object highlight_bond_map,
                          python::object highlight_atom_radii, int confId,
                          std::string legend) {
-  rdk_auto_ptr<std::vector<int> > highlightAtoms =
+  std::unique_ptr<std::vector<int>> highlightAtoms =
       pythonObjectToVect(highlight_atoms, static_cast<int>(mol.getNumAtoms()));
-  rdk_auto_ptr<std::vector<int> > highlightBonds =
+  std::unique_ptr<std::vector<int>> highlightBonds =
       pythonObjectToVect(highlight_bonds, static_cast<int>(mol.getNumBonds()));
   // FIX: support these
   ColourPalette *ham = pyDictToColourMap(highlight_atom_map);
@@ -136,9 +136,13 @@ void drawMoleculesHelper2(MolDraw2D &self, python::object pmols,
                           python::object highlight_bond_map,
                           python::object highlight_atom_radii,
                           python::object pconfIds, python::object plegends) {
-  rdk_auto_ptr<std::vector<ROMol *> > mols = pythonObjectToVect<ROMol *>(pmols);
+  std::unique_ptr<std::vector<ROMol *>> mols =
+      pythonObjectToVect<ROMol *>(pmols);
+  if (mols == nullptr || !mols->size()) {
+    return;
+  }
   unsigned int nThere = mols->size();
-  rdk_auto_ptr<std::vector<std::vector<int> > > highlightAtoms;
+  std::unique_ptr<std::vector<std::vector<int>>> highlightAtoms;
   if (highlight_atoms) {
     if (python::extract<unsigned int>(highlight_atoms.attr("__len__")()) !=
         nThere) {
@@ -146,12 +150,12 @@ void drawMoleculesHelper2(MolDraw2D &self, python::object pmols,
           "If highlightAtoms is provided it must be the same length as the "
           "molecule list.");
     }
-    highlightAtoms.reset(new std::vector<std::vector<int> >(nThere));
+    highlightAtoms.reset(new std::vector<std::vector<int>>(nThere));
     for (unsigned int i = 0; i < nThere; ++i) {
       pythonObjectToVect(highlight_atoms[i], (*highlightAtoms)[i]);
     }
   }
-  rdk_auto_ptr<std::vector<std::vector<int> > > highlightBonds;
+  std::unique_ptr<std::vector<std::vector<int>>> highlightBonds;
   if (highlight_bonds) {
     if (python::extract<unsigned int>(highlight_bonds.attr("__len__")()) !=
         nThere) {
@@ -159,13 +163,13 @@ void drawMoleculesHelper2(MolDraw2D &self, python::object pmols,
           "If highlightBonds is provided it must be the same length as the "
           "molecule list.");
     }
-    highlightBonds.reset(new std::vector<std::vector<int> >(nThere));
+    highlightBonds.reset(new std::vector<std::vector<int>>(nThere));
     for (unsigned int i = 0; i < nThere; ++i) {
       pythonObjectToVect(highlight_bonds[i], (*highlightBonds)[i]);
     }
   }
 
-  rdk_auto_ptr<std::vector<ColourPalette> > highlightAtomMap;
+  std::unique_ptr<std::vector<ColourPalette>> highlightAtomMap;
   if (highlight_atom_map) {
     if (python::extract<unsigned int>(highlight_atom_map.attr("__len__")()) !=
         nThere) {
@@ -178,7 +182,7 @@ void drawMoleculesHelper2(MolDraw2D &self, python::object pmols,
       pyDictToColourMap(highlight_atom_map[i], (*highlightAtomMap)[i]);
     }
   }
-  rdk_auto_ptr<std::vector<ColourPalette> > highlightBondMap;
+  std::unique_ptr<std::vector<ColourPalette>> highlightBondMap;
   if (highlight_bond_map) {
     if (python::extract<unsigned int>(highlight_bond_map.attr("__len__")()) !=
         nThere) {
@@ -191,7 +195,7 @@ void drawMoleculesHelper2(MolDraw2D &self, python::object pmols,
       pyDictToColourMap(highlight_bond_map[i], (*highlightBondMap)[i]);
     }
   }
-  rdk_auto_ptr<std::vector<std::map<int, double> > > highlightRadii;
+  std::unique_ptr<std::vector<std::map<int, double>>> highlightRadii;
   if (highlight_atom_radii) {
     if (python::extract<unsigned int>(highlight_atom_radii.attr("__len__")()) !=
         nThere) {
@@ -199,15 +203,15 @@ void drawMoleculesHelper2(MolDraw2D &self, python::object pmols,
           "If highlightAtomRadii is provided it must be the same length as the "
           "molecule list.");
     }
-    highlightRadii.reset(new std::vector<std::map<int, double> >(nThere));
+    highlightRadii.reset(new std::vector<std::map<int, double>>(nThere));
     for (unsigned int i = 0; i < nThere; ++i) {
       pyDictToDoubleMap(highlight_atom_radii[i], (*highlightRadii)[i]);
     }
   }
-  // rdk_auto_ptr<std::vector<int> > highlightAtoms =
+  // std::unique_ptr<std::vector<int> > highlightAtoms =
   //     pythonObjectToVect(highlight_atoms,
   //     static_cast<int>(mol.getNumAtoms()));
-  // rdk_auto_ptr<std::vector<int> > highlightBonds =
+  // std::unique_ptr<std::vector<int> > highlightBonds =
   //     pythonObjectToVect(highlight_bonds,
   //     static_cast<int>(mol.getNumBonds()));
   // FIX: support these
@@ -215,8 +219,8 @@ void drawMoleculesHelper2(MolDraw2D &self, python::object pmols,
   // std::map<int, DrawColour> *hbm = pyDictToColourMap(highlight_bond_map);
   // std::map<int, double> *har = pyDictToDoubleMap(highlight_atom_radii);
   //
-  rdk_auto_ptr<std::vector<int> > confIds = pythonObjectToVect<int>(pconfIds);
-  rdk_auto_ptr<std::vector<std::string> > legends =
+  std::unique_ptr<std::vector<int>> confIds = pythonObjectToVect<int>(pconfIds);
+  std::unique_ptr<std::vector<std::string>> legends =
       pythonObjectToVect<std::string>(plegends);
 
   self.drawMolecules(*mols, legends.get(), highlightAtoms.get(),
@@ -229,19 +233,19 @@ void drawReactionHelper(MolDraw2D &self, const ChemicalReaction &rxn,
                         bool highlightByReactant,
                         python::object phighlightColorsReactants,
                         python::object pconfIds) {
-  rdk_auto_ptr<std::vector<DrawColour> > highlightColorsReactants;
+  std::unique_ptr<std::vector<DrawColour>> highlightColorsReactants;
   if (phighlightColorsReactants) {
     highlightColorsReactants.reset(new std::vector<DrawColour>);
     pyListToColourVec(phighlightColorsReactants, *highlightColorsReactants);
   }
 
-  rdk_auto_ptr<std::vector<int> > confIds = pythonObjectToVect<int>(pconfIds);
+  std::unique_ptr<std::vector<int>> confIds = pythonObjectToVect<int>(pconfIds);
 
   self.drawReaction(rxn, highlightByReactant, highlightColorsReactants.get(),
                     confIds.get());
 }
 
-#ifdef RDK_CAIRO_BUILD
+#ifdef RDK_BUILD_CAIRO_SUPPORT
 python::object getCairoDrawingText(const RDKit::MolDraw2DCairo &self) {
   std::string res = self.getDrawingText();
   python::object retval = python::object(
@@ -252,7 +256,7 @@ python::object getCairoDrawingText(const RDKit::MolDraw2DCairo &self) {
 ROMol *prepMolForDrawing(const ROMol *m, bool kekulize = true,
                          bool addChiralHs = true, bool wedgeBonds = true,
                          bool forceCoords = false) {
-  RWMol *res = new RWMol(*m);
+  auto *res = new RWMol(*m);
   MolDraw2DUtils::prepareMolForDrawing(*res, kekulize, addChiralHs, wedgeBonds,
                                        forceCoords);
   return static_cast<ROMol *>(res);
@@ -291,14 +295,14 @@ void setAtomPalette(RDKit::MolDrawOptions &self, python::object cmap) {
   self.atomColourPalette.clear();
   updateAtomPalette(self, cmap);
 }
-}
+}  // namespace RDKit
 
 BOOST_PYTHON_MODULE(rdMolDraw2D) {
   python::scope().attr("__doc__") =
       "Module containing a C++ implementation of 2D molecule drawing";
   std::string docString;
 
-  python::class_<std::map<int, std::string> >("IntStringMap")
+  python::class_<std::map<int, std::string>>("IntStringMap")
       .def(python::map_indexing_suite<std::map<int, std::string>, true>());
 
   docString = "Drawing options";
@@ -424,7 +428,7 @@ BOOST_PYTHON_MODULE(rdMolDraw2D) {
            (RDKit::MolDrawOptions & (RDKit::MolDraw2D::*)()) &
                RDKit::MolDraw2D::drawOptions,
            python::return_internal_reference<
-               1, python::with_custodian_and_ward_postcall<0, 1> >(),
+               1, python::with_custodian_and_ward_postcall<0, 1>>(),
            "Returns a modifiable version of the current drawing options");
   docString = "SVG molecule drawer";
   python::class_<RDKit::MolDraw2DSVG, python::bases<RDKit::MolDraw2D>,
@@ -433,10 +437,12 @@ BOOST_PYTHON_MODULE(rdMolDraw2D) {
       .def(python::init<int, int, int, int>())
       .def("FinishDrawing", &RDKit::MolDraw2DSVG::finishDrawing,
            "add the last bits of SVG to finish the drawing")
+      .def("TagAtoms", &RDKit::MolDraw2DSVG::tagAtoms,
+           "add RDKit-specific information to the bottom of the drawing")
       .def("GetDrawingText", &RDKit::MolDraw2DSVG::getDrawingText,
            "return the SVG");
 
-#ifdef RDK_CAIRO_BUILD
+#ifdef RDK_BUILD_CAIRO_SUPPORT
   docString = "Cairo molecule drawer";
   python::class_<RDKit::MolDraw2DCairo, python::bases<RDKit::MolDraw2D>,
                  boost::noncopyable>("MolDraw2DCairo", docString.c_str(),

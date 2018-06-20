@@ -9,6 +9,7 @@
 //  of the RDKit source tree.
 //
 
+#include <RDBoost/test.h>
 #include <Geometry/UniformGrid3D.h>
 #include "ShapeEncoder.h"
 #include "ShapeUtils.h"
@@ -52,6 +53,8 @@ void test2Compare() {
 
   double dist = MolShapes::tanimotoDistance(*m, *mdup);
   CHECK_INVARIANT(dist == 0.0, "");
+  dist = MolShapes::tverskyIndex(*m, *mdup, 1.0, 1.0);
+  CHECK_INVARIANT(dist == 1.0, "");
 
   delete m;
   delete mdup;
@@ -64,6 +67,8 @@ void test2Compare() {
   CHECK_INVARIANT(rmsd >= 0.0, "");
   dist = MolShapes::tanimotoDistance(*m, *m2);
   CHECK_INVARIANT(RDKit::feq(dist, 0.2813), "");
+  dist = MolShapes::tverskyIndex(*m, *m2, 1.0, 1.0);
+  CHECK_INVARIANT(RDKit::feq(dist, 0.7187), "");
   delete m2;
 
   m2 = MolFileToMol(fname2);
@@ -88,7 +93,8 @@ void test3Methane() {
       rdbase + "/Code/GraphMol/ShapeHelpers/test_data/methane.mol";
   ROMol *m = MolFileToMol(fname);
   RDGeom::Point3D dims, offSet;
-  MolShapes::computeConfDimsAndOffset(m->getConformer(), dims, offSet, 0, 3.0);
+  MolShapes::computeConfDimsAndOffset(m->getConformer(), dims, offSet, nullptr,
+                                      3.0);
   std::cout << dims << " " << offSet << "\n";
   RDGeom::UniformGrid3D grd(6.5, 6.5, 6.5);
   // dims.x, dims.y, dims.z, 0.5, DiscreteValueVect::TWOBITVALUE, &offSet);

@@ -11,6 +11,11 @@
 //   @@ All Rights Reserved  @@
 //
 
+#if defined(__CYGWIN__) && !defined(fileno)
+// -std=c++11 turns off recent posix features
+extern "C" int fileno(FILE*);
+#endif
+
 #include <cstdio>
 #ifdef WIN32
 #include <io.h>
@@ -278,6 +283,9 @@ s		    {	yylval->atom = new Atom( 16 );
 			}
 
 <IN_ATOM_STATE>\: 	{ return COLON_TOKEN; }
+
+<IN_ATOM_STATE>\# 	{ return HASH_TOKEN; }
+
 
 %{
   // The next block is a workaround for a pathlogy in the SMILES produced

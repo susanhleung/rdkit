@@ -7,6 +7,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/export.h>
 #ifndef _RD_MOLSUPPLIER_H
 #define _RD_MOLSUPPLIER_H
 
@@ -14,12 +15,22 @@
 
 #include <string>
 #include <list>
+#include <memory>
 #include <vector>
 #include <iostream>
 #include <GraphMol/ROMol.h>
 
+#ifdef RDK_BUILD_COORDGEN_SUPPORT
+namespace schrodinger {
+namespace mae {
+class Reader;
+class Block;
+}  // namespace mae
+}  // namespace schrodinger
+#endif  // RDK_BUILD_COORDGEN_SUPPORT
+
 namespace RDKit {
-std::string strip(const std::string &orig);
+RDKIT_FILEPARSERS_EXPORT std::string strip(const std::string &orig);
 
 /*!
 //
@@ -42,7 +53,7 @@ std::string strip(const std::string &orig);
 //
 //
 */
-class MolSupplier {
+class RDKIT_FILEPARSERS_EXPORT MolSupplier {
   // this is an abstract base class to supply molecules one at a time
  public:
   MolSupplier(){};
@@ -68,7 +79,7 @@ class MolSupplier {
 };
 
 // \brief a supplier from an SD file that only reads forward:
-class ForwardSDMolSupplier : public MolSupplier {
+class RDKIT_FILEPARSERS_EXPORT ForwardSDMolSupplier : public MolSupplier {
   /*************************************************************************
    * A lazy mol supplier from a SD file.
    *  - When new molecules are read using "next" their positions in the file are
@@ -105,7 +116,7 @@ class ForwardSDMolSupplier : public MolSupplier {
 };
 
 // \brief a lazy supplier from an SD file
-class SDMolSupplier : public ForwardSDMolSupplier {
+class RDKIT_FILEPARSERS_EXPORT SDMolSupplier : public ForwardSDMolSupplier {
   /*************************************************************************
    * A lazy mol supplier from a SD file.
    *  - When new molecules are read using "next" their positions in the file are
@@ -178,7 +189,7 @@ class SDMolSupplier : public ForwardSDMolSupplier {
 };
 
 //! lazy file parser for Smiles tables
-class SmilesMolSupplier : public MolSupplier {
+class RDKIT_FILEPARSERS_EXPORT SmilesMolSupplier : public MolSupplier {
   /**************************************************************************
    * Lazy file parser for Smiles table file, similar to the lazy SD
    * file parser above
@@ -261,7 +272,7 @@ class SmilesMolSupplier : public MolSupplier {
 };
 
 //! lazy file parser for TDT files
-class TDTMolSupplier : public MolSupplier {
+class RDKIT_FILEPARSERS_EXPORT TDTMolSupplier : public MolSupplier {
   /**************************************************************************
    * Lazy file parser for TDT files, similar to the lazy SD
    * file parser above
@@ -327,11 +338,12 @@ class TDTMolSupplier : public MolSupplier {
 };
 
 //! lazy file parser for PDB files
-class PDBMolSupplier : public MolSupplier {
+class RDKIT_FILEPARSERS_EXPORT PDBMolSupplier : public MolSupplier {
  public:
   explicit PDBMolSupplier(std::istream *inStream, bool takeOwnership = true,
                           bool sanitize = true, bool removeHs = true,
-                          unsigned int flavor = 0, bool proximityBonding = true);
+                          unsigned int flavor = 0,
+                          bool proximityBonding = true);
   explicit PDBMolSupplier(const std::string &fname, bool sanitize = true,
                           bool removeHs = true, unsigned int flavor = 0,
                           bool proximityBonding = true);
@@ -349,6 +361,31 @@ class PDBMolSupplier : public MolSupplier {
   bool df_sanitize, df_removeHs, df_proximityBonding;
   unsigned int d_flavor;
 };
-}
+#ifdef RDK_BUILD_COORDGEN_SUPPORT
+//! lazy file parser for MAE files
+class RDKIT_FILEPARSERS_EXPORT MaeMolSupplier : public MolSupplier {
+ public:
+  MaeMolSupplier() { init(); };
+  explicit MaeMolSupplier(std::istream *inStream, bool takeOwnership = true,
+                          bool sanitize = true, bool removeHs = true);
+  explicit MaeMolSupplier(const std::string &fname, bool sanitize = true,
+                          bool removeHs = true);
+
+  virtual ~MaeMolSupplier() {
+    if (df_owner && dp_inStream) delete dp_inStream;
+  };
+
+  virtual void init();
+  virtual void reset();
+  virtual ROMol *next();
+  virtual bool atEnd();
+
+ protected:
+  bool df_sanitize, df_removeHs;
+  std::shared_ptr<schrodinger::mae::Reader> d_reader;
+  std::shared_ptr<schrodinger::mae::Block> d_next_struct;
+};
+#endif  // RDK_BUILD_COORDGEN_SUPPORT
+}  // namespace RDKit
 
 #endif

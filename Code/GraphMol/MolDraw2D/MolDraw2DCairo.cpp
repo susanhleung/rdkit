@@ -49,7 +49,7 @@ void MolDraw2DCairo::drawLine(const Point2D &cds1, const Point2D &cds2) {
     cairo_set_dash(dp_cr, dd, dashes.size(), 0);
     delete[] dd;
   } else {
-    cairo_set_dash(dp_cr, 0, 0, 0);
+    cairo_set_dash(dp_cr, nullptr, 0, 0);
   }
 
   cairo_move_to(dp_cr, c1.x, c1.y);
@@ -63,6 +63,7 @@ void MolDraw2DCairo::drawWavyLine(const Point2D &cds1, const Point2D &cds2,
                                   unsigned int nSegments, double vertOffset) {
   PRECONDITION(dp_cr, "no draw context");
   PRECONDITION(nSegments > 1, "too few segments");
+  RDUNUSED_PARAM(col2);
 
   if (nSegments % 2)
     ++nSegments;  // we're going to assume an even number of segments
@@ -76,7 +77,7 @@ void MolDraw2DCairo::drawWavyLine(const Point2D &cds1, const Point2D &cds2,
 
   unsigned int width = lineWidth();
   cairo_set_line_width(dp_cr, width);
-  cairo_set_dash(dp_cr, 0, 0, 0);
+  cairo_set_dash(dp_cr, nullptr, 0, 0);
   setColour(col1);
   cairo_move_to(dp_cr, c1.x, c1.y);
   for (unsigned int i = 0; i < nSegments; ++i) {
@@ -119,7 +120,7 @@ void MolDraw2DCairo::drawPolygon(const std::vector<Point2D> &cds) {
   cairo_set_line_cap(dp_cr, CAIRO_LINE_CAP_BUTT);
   cairo_set_line_join(dp_cr, CAIRO_LINE_JOIN_BEVEL);
   cairo_set_line_width(dp_cr, lineWidth());
-  cairo_set_dash(dp_cr, 0, 0, 0);
+  cairo_set_dash(dp_cr, nullptr, 0, 0);
 
   for (unsigned int i = 0; i < cds.size(); ++i) {
     Point2D lc = getDrawCoords(cds[i]);

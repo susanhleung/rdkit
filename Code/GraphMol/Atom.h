@@ -12,6 +12,7 @@
   \brief Defines the Atom class and associated typedefs
 
 */
+#include <RDBoost/export.h>
 #ifndef _RD_ATOM_H
 #define _RD_ATOM_H
 
@@ -65,14 +66,12 @@ class AtomMonomerInfo;
   at the *end* of the list of other bonds.
 
 */
-class Atom : public RDProps {
+class RDKIT_GRAPHMOL_EXPORT Atom : public RDProps {
   friend class MolPickler;  //!< the pickler needs access to our privates
   friend class ROMol;
   friend class RWMol;
 
  public:
-  typedef boost::shared_ptr<Atom> ATOM_SPTR;
-  typedef boost::shared_ptr<const Atom> C_ATOM_SPTR;
   // FIX: grn...
   typedef Queries::Query<int, Atom const *, true> QUERYATOM_QUERY;
 
@@ -303,10 +302,6 @@ class Atom : public RDProps {
         | [CH2]   | O[CH2]O | Yes   |
   */
   virtual bool Match(Atom const *what) const;
-  //! \overload
-  virtual inline bool Match(const ATOM_SPTR &what) const {
-    return Match(what.get());
-  };
 
   //! returns the perturbation order for a list of integers
   /*!
@@ -401,8 +396,8 @@ class Atom : public RDProps {
   boost::uint8_t d_chiralTag;
   boost::uint8_t d_hybrid;
 
-  atomindex_t d_index;
   boost::uint16_t d_isotope;
+  atomindex_t d_index;
 
   ROMol *dp_mol;
   AtomMonomerInfo *dp_monomerInfo;
@@ -411,26 +406,26 @@ class Atom : public RDProps {
 
 //! Set the atom's MDL integer RLabel
 //   Setting to 0 clears the rlabel.  Rlabel must be in the range [0..99]
-void setAtomRLabel(Atom *atm, int rlabel);
-int getAtomRLabel(const Atom *atm);
+RDKIT_GRAPHMOL_EXPORT void setAtomRLabel(Atom *atm, int rlabel);
+RDKIT_GRAPHMOL_EXPORT int getAtomRLabel(const Atom *atm);
 
 //! Set the atom's MDL atom alias
 //   Setting to an empty string clears the alias
-void setAtomAlias(Atom *atom, const std::string &alias);
-std::string getAtomAlias(const Atom *atom);
+RDKIT_GRAPHMOL_EXPORT void setAtomAlias(Atom *atom, const std::string &alias);
+RDKIT_GRAPHMOL_EXPORT std::string getAtomAlias(const Atom *atom);
 
 //! Set the atom's MDL atom value
 //   Setting to an empty string clears the value
 //   This is where recursive smarts get stored in MolBlock Queries
-void setAtomValue(Atom *atom, const std::string &value);
-std::string getAtomValue(const Atom *atom);
+RDKIT_GRAPHMOL_EXPORT void setAtomValue(Atom *atom, const std::string &value);
+RDKIT_GRAPHMOL_EXPORT std::string getAtomValue(const Atom *atom);
 
 //! Sets the supplemental label that will follow the atom when writing
 //   smiles strings.
-void setSupplementalSmilesLabel(Atom *atom, const std::string &label);
-std::string getSupplementalSmilesLabel(const Atom *atom);
+RDKIT_GRAPHMOL_EXPORT void setSupplementalSmilesLabel(Atom *atom, const std::string &label);
+RDKIT_GRAPHMOL_EXPORT std::string getSupplementalSmilesLabel(const Atom *atom);
 };
 //! allows Atom objects to be dumped to streams
-std::ostream &operator<<(std::ostream &target, const RDKit::Atom &at);
+RDKIT_GRAPHMOL_EXPORT std::ostream &operator<<(std::ostream &target, const RDKit::Atom &at);
 
 #endif

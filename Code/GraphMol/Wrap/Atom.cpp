@@ -27,7 +27,6 @@
 
 namespace python = boost::python;
 namespace RDKit {
-
 void expandQuery(QueryAtom *self, const QueryAtom *other,
                  Queries::CompositeQueryType how, bool maintainOrder) {
   if (other->hasQuery()) {
@@ -73,7 +72,7 @@ python::tuple AtomGetBonds(Atom *atom) {
   ROMol::OEDGE_ITER begin, end;
   boost::tie(begin, end) = parent->getAtomBonds(atom);
   while (begin != end) {
-    Bond *tmpB = (*parent)[*begin].get();
+    const Bond *tmpB = (*parent)[*begin];
     res.append(python::ptr(tmpB));
     begin++;
   }
@@ -94,12 +93,15 @@ bool AtomIsInRingSize(const Atom *atom, int size) {
                                                                 size);
 }
 
-std::string AtomGetSmarts(const Atom *atom) {
+std::string AtomGetSmarts(const Atom *atom, bool doKekule, bool allHsExplicit,
+                          bool isomericSmiles) {
   std::string res;
   if (atom->hasQuery()) {
     res = SmartsWrite::GetAtomSmarts(static_cast<const QueryAtom *>(atom));
   } else {
-    res = SmilesWrite::GetAtomSmiles(atom);
+    // FIX: this should not be necessary
+    res = SmilesWrite::GetAtomSmiles(atom, doKekule, nullptr, allHsExplicit,
+                                     isomericSmiles);
   }
   return res;
 }
@@ -113,7 +115,7 @@ AtomMonomerInfo *AtomGetMonomerInfo(Atom *atom) {
 }
 AtomPDBResidueInfo *AtomGetPDBResidueInfo(Atom *atom) {
   AtomMonomerInfo *res = atom->getMonomerInfo();
-  if (!res) return NULL;
+  if (!res) return nullptr;
   if (res->getMonomerType() != AtomMonomerInfo::PDBRESIDUE) {
     throw_value_error("MonomerInfo is not a PDB Residue");
   }
@@ -244,6 +246,9 @@ struct atom_wrapper {
              "debugging purposes.\n\n")
 
         .def("GetSmarts", AtomGetSmarts,
+             (python::arg("self"), python::arg("doKekule") = false,
+              python::arg("allHsExplicit") = false,
+              python::arg("isomericSmiles") = true),
              "returns the SMARTS (or SMILES) string for an Atom\n\n")
 
         // properties
@@ -364,11 +369,11 @@ struct atom_wrapper {
 
         .def("GetMonomerInfo", AtomGetMonomerInfo,
              python::return_internal_reference<
-                 1, python::with_custodian_and_ward_postcall<0, 1> >(),
+                 1, python::with_custodian_and_ward_postcall<0, 1>>(),
              "Returns the atom's MonomerInfo object, if there is one.\n\n")
         .def("GetPDBResidueInfo", AtomGetPDBResidueInfo,
              python::return_internal_reference<
-                 1, python::with_custodian_and_ward_postcall<0, 1> >(),
+                 1, python::with_custodian_and_ward_postcall<0, 1>>(),
              "Returns the atom's MonomerInfo object, if there is one.\n\n")
         .def("SetMonomerInfo", SetAtomMonomerInfo,
              "Sets the atom's MonomerInfo object.\n\n")
@@ -406,7 +411,7 @@ struct atom_wrapper {
     atomClassDoc =
         "The class to store QueryAtoms.\n\
 These cannot currently be constructed directly from Python\n";
-    python::class_<QueryAtom, python::bases<Atom> >(
+    python::class_<QueryAtom, python::bases<Atom>>(
         "QueryAtom", atomClassDoc.c_str(), python::no_init)
         .def("ExpandQuery", expandQuery,
              (python::arg("self"), python::arg("other"),
@@ -450,5 +455,5 @@ These cannot currently be constructed directly from Python\n";
         "'C<xxx>'\n");
   }
 };
-}  // end of namespace
+}  // namespace RDKit
 void wrap_atom() { RDKit::atom_wrapper::wrap(); }

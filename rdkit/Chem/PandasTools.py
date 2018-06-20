@@ -17,11 +17,11 @@ If the dataframe is containing a molecule format in a column (e.g. smiles), like
 ...   'Name':'Ampicilline'}, ignore_index=True)#Ampicilline
 >>> print([str(x) for x in  antibiotics.columns])
 ['Name', 'Smiles']
->>> print(antibiotics)
+>>> print(antibiotics) # doctest: +ELLIPSIS
             Name                                             Smiles
 0  Penicilline G    CC1(C(N2C(S1)C(C2=O)NC(=O)CC3=CC=CC=C3)C(=O)O)C
-1   Tetracycline  CC1(C2CC3C(C(=O)C(=C(C3(C(=O)C2=C(C4=C1C=CC=C4...
-2  Ampicilline  CC1(C(N2C(S1)C(C2=O)NC(=O)C(C3=CC=CC=C3)N)C(=O...
+1   Tetracycline  CC1(C2CC3C(C(=O)C(=C(C3(C(=O)C2=C(C4=C1C=CC=C4*...*
+2  Ampicilline  CC1(C(N2C(S1)C(C2=O)NC(=O)C(C3=CC=CC=C3)N)C(=O*...*
 
 a new column can be created holding the respective RDKit molecule objects. The fingerprint can be
 included to accelerate substructure searches on the dataframe.
@@ -36,10 +36,10 @@ Such the antibiotics containing the beta-lactam ring "C1C(=O)NC1" can be obtaine
 
 >>> beta_lactam = Chem.MolFromSmiles('C1C(=O)NC1')
 >>> beta_lactam_antibiotics = antibiotics[antibiotics['Molecule'] >= beta_lactam]
->>> print(beta_lactam_antibiotics[['Name','Smiles']])
+>>> print(beta_lactam_antibiotics[['Name','Smiles']]) # doctest: +ELLIPSIS
             Name                                             Smiles
 0  Penicilline G    CC1(C(N2C(S1)C(C2=O)NC(=O)CC3=CC=CC=C3)C(=O)O)C
-2  Ampicilline  CC1(C(N2C(S1)C(C2=O)NC(=O)C(C3=CC=CC=C3)N)C(=O...
+2  Ampicilline  CC1(C(N2C(S1)C(C2=O)NC(=O)C(C3=CC=CC=C3)N)C(=O*...*
 
 
 It is also possible to load an SDF file can be load into a dataframe.
@@ -74,7 +74,8 @@ Molecule                  200  non-null values
 dtypes: object(20)>
 
 Conversion to html is quite easy:
->>> htm = frame.to_html()
+>>> htm = frame.to_html() # doctest: +ELLIPSIS
+*...*
 >>> str(htm[:36])
 '<table border="1" class="dataframe">'
 
@@ -135,6 +136,8 @@ try:
       pd.set_option('display.height', 1000000000)
     if 'display.max_colwidth' in pd.core.config._registered_options:
       pd.set_option('display.max_colwidth', 1000000000)
+    if 'display.max_columns' in pd.core.config._registered_options:
+      pd.set_option('display.max_columns', 20)
     # saves the default pandas rendering to allow restoration
     defPandasRendering = pd.core.frame.DataFrame.to_html
 except ImportError:
@@ -208,7 +211,7 @@ def _get_svg_image(mol, size=(200, 200), highlightAtoms=[]):
   drawer = rdMolDraw2D.MolDraw2DSVG(*size)
   drawer.DrawMolecule(mol, highlightAtoms=highlightAtoms)
   drawer.FinishDrawing()
-  svg = drawer.GetDrawingText().replace('svg:', '')
+  svg = drawer.GetDrawingText()
   return SVG(svg).data  # IPython's SVG clears the svg text
 
 
@@ -256,7 +259,7 @@ def PrintAsBase64PNGString(x, renderer=None):
     svg = Draw._moltoSVG(x, molSize, highlightAtoms, "", True)
     return SVG(svg).data
   else:
-    data = Draw._moltoimg(x,molSize,highlightAtoms,"",returnPNG=True, kekulize=True)
+    data = Draw._moltoimg(x, molSize, highlightAtoms, "", returnPNG=True, kekulize=True)
     return '<img src="data:image/png;base64,%s" alt="Mol"/>' % _get_image(data)
 
 
@@ -386,9 +389,10 @@ def WriteSDF(df, out, molColName='ROMol', idName=None, properties=None, allNumer
   else:
     properties = list(properties)
   if allNumeric:
-    properties.extend(
-      [dt for dt in df.dtypes.keys()
-       if (np.issubdtype(df.dtypes[dt], float) or np.issubdtype(df.dtypes[dt], int))])
+    properties.extend([
+      dt for dt in df.dtypes.keys()
+      if (np.issubdtype(df.dtypes[dt], float) or np.issubdtype(df.dtypes[dt], int))
+    ])
 
   if molColName in properties:
     properties.remove(molColName)
@@ -582,35 +586,34 @@ def _runDoctests(verbose=None):  # pragma: nocover
   import doctest
   failed, _ = doctest.testmod(optionflags=doctest.ELLIPSIS + doctest.NORMALIZE_WHITESPACE,
                               verbose=verbose)
-  if(failed):
+  if (failed):
     sys.exit(failed)
+
 
 if __name__ == '__main__':  # pragma: nocover
   import unittest
   try:
     import xlsxwriter
   except ImportError:
-    print('not there')
     xlsxwriter = None
+
   class TestCase(unittest.TestCase):
-    @unittest.skipIf(xlsxwriter is None,'xlsxwriter not installed')
+
+    @unittest.skipIf(xlsxwriter is None, 'xlsxwriter not installed')
     def testGithub1507(self):
       import os
       from rdkit import RDConfig
-      sdfFile = os.path.join(RDConfig.RDDataDir,'NCI/first_200.props.sdf')
+      sdfFile = os.path.join(RDConfig.RDDataDir, 'NCI/first_200.props.sdf')
       frame = LoadSDF(sdfFile)
-      SaveXlsxFromFrame(frame,'foo.xlsx')
+      SaveXlsxFromFrame(frame, 'foo.xlsx')
 
   if pd is None:
     print("pandas installation not found, skipping tests", file=sys.stderr)
   elif _getPandasVersion() < (0, 10):
     print("pandas installation >=0.10 not found, skipping tests", file=sys.stderr)
   else:
-    _runDoctests();
+    _runDoctests()
     unittest.main()
-
-
-
 
 # $Id$
 #

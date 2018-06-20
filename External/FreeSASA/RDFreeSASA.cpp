@@ -42,16 +42,19 @@ extern "C" {
 }
 
 namespace RDKit {
-  namespace common_properties {
-    namespace Atom {
-      const std::string SASA = "SASA";; // Solvent Accessible Surface Area for atom- double
-      const std::string SASAClass = "SASAClass";     // Class type, 0,1,2... etc
-      const std::string SASAClassName = "SASAClassName"; // Class name, Polar, APolar etc...
-    }
-    namespace Molecule {
-      const std::string SASA = "SASA"; // Total Solvent Accessible Surface area for molecule;
-    }
-  }
+namespace common_properties {
+namespace Atom {
+const std::string SASA = "SASA";
+;  // Solvent Accessible Surface Area for atom- double
+const std::string SASAClass = "SASAClass";  // Class type, 0,1,2... etc
+const std::string SASAClassName =
+    "SASAClassName";  // Class name, Polar, APolar etc...
+}
+namespace Molecule {
+const std::string SASA =
+    "SASA";  // Total Solvent Accessible Surface area for molecule;
+}
+}
 }
 
 namespace FreeSASA {
@@ -60,7 +63,7 @@ using namespace RDKit;
 bool classifyAtoms(ROMol &mol, std::vector<double> &radii,
                    const SASAOpts &opts) {
   radii.clear();
-  const freesasa_classifier *classifier = 0;
+  const freesasa_classifier *classifier = nullptr;
   switch (opts.classifier) {
     case SASAOpts::Protor:
       classifier = &freesasa_protor_classifier;
@@ -86,7 +89,7 @@ bool classifyAtoms(ROMol &mol, std::vector<double> &radii,
     const AtomMonomerInfo *info = atom->getMonomerInfo();
     if (info) {
       const char *atom_name = info->getName().c_str();
-      const char *res_name = 0;
+      const char *res_name = nullptr;
 
       if (info->getMonomerType() == AtomMonomerInfo::PDBRESIDUE) {
         res_name = ((AtomPDBResidueInfo *)info)->getResidueName().c_str();
@@ -117,10 +120,8 @@ bool classifyAtoms(ROMol &mol, std::vector<double> &radii,
 }
 
 namespace {
-double internalCalcSASA(const ROMol &mol,
-                        const std::vector<double> &radii,
-                        int confIdx,
-                        const SASAOpts &opts) {
+double internalCalcSASA(const ROMol &mol, const std::vector<double> &radii,
+                        int confIdx, const SASAOpts &opts) {
   PRECONDITION(mol.getNumConformers(), "No conformers in molecule");
   PRECONDITION(confIdx < rdcast<int>(mol.getNumConformers()),
                "Conformer index out of range");
@@ -167,13 +168,11 @@ double internalCalcSASA(const ROMol &mol,
 }
 }
 
-double calcSASA(const RDKit::ROMol &mol,
-                const std::vector<double> &radii,
-                int confIdx,
-                const RDKit::QueryAtom *query,
-                const SASAOpts &opts){
+double calcSASA(const RDKit::ROMol &mol, const std::vector<double> &radii,
+                int confIdx, const RDKit::QueryAtom *query,
+                const SASAOpts &opts) {
   double result = internalCalcSASA(mol, radii, confIdx, opts);
-  if(query) {
+  if (query) {
     result = 0.0f;
     for (ROMol::ConstQueryAtomIterator at = mol.beginQueryAtoms(query);
          at != mol.endQueryAtoms(); ++at) {
@@ -184,18 +183,15 @@ double calcSASA(const RDKit::ROMol &mol,
   return result;
 }
 
-const RDKit::QueryAtom * makeFreeSasaAPolarAtomQuery() {
-  QueryAtom *qa = new QueryAtom;
+const RDKit::QueryAtom *makeFreeSasaAPolarAtomQuery() {
+  auto *qa = new QueryAtom;
   qa->setQuery(makePropQuery<Atom, std::string>("SASAClassName", "Apolar"));
   return qa;
 }
 
-const RDKit::QueryAtom * makeFreeSasaPolarAtomQuery() {
-  QueryAtom *qa = new QueryAtom;
+const RDKit::QueryAtom *makeFreeSasaPolarAtomQuery() {
+  auto *qa = new QueryAtom;
   qa->setQuery(makePropQuery<Atom, std::string>("SASAClassName", "Polar"));
   return qa;
 }
 }
-
-
-

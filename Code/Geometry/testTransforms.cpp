@@ -9,6 +9,7 @@
 //  of the RDKit source tree.
 //
 
+#include <RDBoost/test.h>
 #include <RDGeneral/types.h>
 #include <RDGeneral/Invariant.h>
 #include <RDGeneral/utils.h>
@@ -344,7 +345,7 @@ void testFromQuaternion() {
 }
 
 int main() {
-  srand(time(NULL));
+  srand(time(nullptr));
 
   std::cout << "****************************************\n";
   std::cout << "testPointND\n";

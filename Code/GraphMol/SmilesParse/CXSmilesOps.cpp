@@ -50,7 +50,8 @@ std::string read_text_to(Iterator &first, Iterator last, std::string delims) {
   Iterator start = first;
   // EFF: there are certainly faster ways to do this
   while (first != last && delims.find_first_of(*first) == std::string::npos) {
-    if (*first == '&' && std::distance(first, last) > 2 && *(first + 1) == '#') {
+    if (*first == '&' && std::distance(first, last) > 2 &&
+        *(first + 1) == '#') {
       // escaped char
       if (start != first) {
         res += std::string(start, first);
@@ -144,7 +145,7 @@ template <typename Iterator>
 bool parse_coords(Iterator &first, Iterator last, RDKit::RWMol &mol) {
   if (first >= last || *first != '(') return false;
 
-  RDKit::Conformer *conf = new Conformer(mol.getNumAtoms());
+  auto *conf = new Conformer(mol.getNumAtoms());
   mol.addConformer(conf);
   ++first;
   unsigned int atIdx = 0;
@@ -267,8 +268,7 @@ bool parse_it(Iterator &first, Iterator last, RDKit::RWMol &mol) {
       } else {
         if (!parse_atom_labels(first, last, mol)) return false;
       }
-    } else if (length > 9 &&
-               std::string(first, first + 9) == "atomProp:") {
+    } else if (length > 9 && std::string(first, first + 9) == "atomProp:") {
       first += 9;
       if (!parse_atom_props(first, last, mol)) return false;
     } else if (*first == 'C') {
@@ -290,7 +290,7 @@ namespace {
 template <typename Q>
 void addquery(Q *qry, std::string symbol, RDKit::RWMol &mol, unsigned int idx) {
   PRECONDITION(qry, "bad query");
-  QueryAtom *qa = new QueryAtom(0);
+  auto *qa = new QueryAtom(0);
   qa->setQuery(qry);
   qa->setNoImplicit(true);
   mol.replaceAtom(idx, qa);

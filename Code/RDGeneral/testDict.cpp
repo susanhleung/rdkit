@@ -10,6 +10,7 @@
 //
 //
 
+#include <RDBoost/test.h>
 #include "types.h"
 #include <RDGeneral/Invariant.h>
 #include <RDGeneral/RDAny.h>
@@ -36,7 +37,7 @@ void testGithub940() {
   // a couple small tests to check for memory leaks. Only useful with valgrind
   {  // tests computed props
     STR_VECT computed;
-    Dict *d = new Dict();
+    auto *d = new Dict();
     d->setVal(RDKit::detail::computedPropName, computed);
     computed.push_back("foo");
     d->setVal(RDKit::detail::computedPropName, computed);
@@ -44,7 +45,7 @@ void testGithub940() {
   }
   {  // tests computed props
     STR_VECT computed;
-    Dict *d = new Dict();
+    auto *d = new Dict();
     d->setVal(RDKit::detail::computedPropName, computed);
     computed.push_back("foo");
     d->setVal(RDKit::detail::computedPropName, computed);
@@ -132,7 +133,7 @@ void testRDAny() {
       std::cerr << "send int vect" << std::endl;
       RDAny a(fooV);
       std::cerr << "retrieve int vect" << std::endl;
-      fooV2 = rdany_cast<std::vector<int> >(a);
+      fooV2 = rdany_cast<std::vector<int>>(a);
       TEST_ASSERT(fooV == fooV2);
     }
 
@@ -155,9 +156,9 @@ void testRDAny() {
     RDAny baz(foo);
 
     for (int i = 0; i < 4; ++i) {
-      TEST_ASSERT(rdany_cast<std::vector<int> >(foo)[i] == i);
-      TEST_ASSERT(rdany_cast<std::vector<int> >(bar)[i] == i);
-      TEST_ASSERT(rdany_cast<std::vector<int> >(baz)[i] == i);
+      TEST_ASSERT(rdany_cast<std::vector<int>>(foo)[i] == i);
+      TEST_ASSERT(rdany_cast<std::vector<int>>(bar)[i] == i);
+      TEST_ASSERT(rdany_cast<std::vector<int>>(baz)[i] == i);
     }
   }
 
@@ -168,13 +169,13 @@ void testRDAny() {
     RDAny foo(v);
 
     for (int i = 0; i < 4; ++i) {
-      TEST_ASSERT(rdany_cast<std::vector<double> >(foo)[i] == i);
+      TEST_ASSERT(rdany_cast<std::vector<double>>(foo)[i] == i);
     }
 
     RDAny b = foo;
 
     for (int i = 0; i < 4; ++i) {
-      TEST_ASSERT(rdany_cast<std::vector<double> >(b)[i] == i);
+      TEST_ASSERT(rdany_cast<std::vector<double>>(b)[i] == i);
     }
   }
   const int loops = 10000000;
@@ -192,7 +193,7 @@ void testRDAny() {
   }
   {
     std::clock_t clock1 = std::clock();
-    boost::any *v = 0, *vv;
+    boost::any *v = nullptr, *vv;
     for (int i = 0; i < loops; ++i) {
       vv = new boost::any(v ? boost::any_cast<int>(*v) + i : i);
       delete v;
@@ -220,7 +221,7 @@ void testRDAny() {
 
   {
     std::clock_t clock1 = std::clock();
-    RDAny *v = 0, *vv;
+    RDAny *v = nullptr, *vv;
     for (int i = 0; i < loops; ++i) {
       vv = new RDAny(v ? rdany_cast<int>(*v) + i : i);
       delete v;
@@ -266,45 +267,45 @@ void testRDAny() {
     std::vector<int> vect;
     vect.push_back(1);
     vv = vect;
-    TEST_ASSERT(rdany_cast<std::vector<int> >(vv)[0] == 1);
+    TEST_ASSERT(rdany_cast<std::vector<int>>(vv)[0] == 1);
 
     // tests copy
     RDAny vvv(vv);
 
-    TEST_ASSERT(rdany_cast<std::vector<int> >(vvv)[0] == 1);
+    TEST_ASSERT(rdany_cast<std::vector<int>>(vvv)[0] == 1);
   }
 
   {
     // Checks fallback to Any
-    std::vector<std::pair<int, int> > pvect;
+    std::vector<std::pair<int, int>> pvect;
     pvect.push_back(std::make_pair<int, int>(2, 2));
     boost::any any1(pvect);
-    boost::any_cast<std::vector<std::pair<int, int> > >(any1);
-    boost::any_cast<std::vector<std::pair<int, int> > &>(any1);
-    boost::any_cast<const std::vector<std::pair<int, int> > &>(any1);
+    boost::any_cast<std::vector<std::pair<int, int>>>(any1);
+    boost::any_cast<std::vector<std::pair<int, int>> &>(any1);
+    boost::any_cast<const std::vector<std::pair<int, int>> &>(any1);
 
     RDAny vv(pvect);
     boost::any &any = rdany_cast<boost::any &>(vv);
-    boost::any_cast<std::vector<std::pair<int, int> > >(any);
-    boost::any_cast<std::vector<std::pair<int, int> > &>(any);
-    boost::any_cast<const std::vector<std::pair<int, int> > &>(any);
+    boost::any_cast<std::vector<std::pair<int, int>>>(any);
+    boost::any_cast<std::vector<std::pair<int, int>> &>(any);
+    boost::any_cast<const std::vector<std::pair<int, int>> &>(any);
 
-    const std::vector<std::pair<int, int> > &pv =
-        rdany_cast<std::vector<std::pair<int, int> > >(vv);
+    const std::vector<std::pair<int, int>> &pv =
+        rdany_cast<std::vector<std::pair<int, int>>>(vv);
     TEST_ASSERT(pv[0].first == 2);
     RDAny vvv(vv);
     TEST_ASSERT(
-        (rdany_cast<std::vector<std::pair<int, int> > >(vvv)[0].first == 2));
+        (rdany_cast<std::vector<std::pair<int, int>>>(vvv)[0].first == 2));
   }
 
   {
     // Check pointers -- RDAny doesn't delete these, must do them manually
-    std::vector<int> *p = new std::vector<int>();
+    auto *p = new std::vector<int>();
     p->push_back(100);
     RDAny v(p);
     RDAny vv(v);
     try {
-      rdany_cast<std::vector<int> >(v);
+      rdany_cast<std::vector<int>>(v);
 #ifndef UNSAFE_RDVALUE
       PRECONDITION(0, "Should throw bad cast");
 #endif
@@ -315,7 +316,7 @@ void testRDAny() {
     TEST_ASSERT((*rdany_cast<std::vector<int> *>((const RDAny &)vv))[0] == 100);
     delete p;
 
-    std::map<int, int> *m = new std::map<int, int>();
+    auto *m = new std::map<int, int>();
     (*m)[0] = 1;
     RDAny mv(m);
     // leaks
@@ -326,7 +327,7 @@ void testRDAny() {
 
   {
     // check shared ptrs -- boost::any deletes these :)
-    typedef boost::shared_ptr<std::vector<int> > vptr;
+    typedef boost::shared_ptr<std::vector<int>> vptr;
     vptr p(new std::vector<int>());
     p->push_back(100);
     RDAny v(p);
@@ -335,7 +336,7 @@ void testRDAny() {
     TEST_ASSERT((*rdany_cast<vptr>(vv))[0] == 100);
     TEST_ASSERT((*rdany_cast<vptr>((const RDAny &)vv))[0] == 100);
 
-    typedef boost::shared_ptr<std::map<int, int> > mptr;
+    typedef boost::shared_ptr<std::map<int, int>> mptr;
     mptr m(new std::map<int, int>());
     (*m)[0] = 1;
     RDAny mv(m);
@@ -589,8 +590,8 @@ void testUpdate() {
     d2.update(d);
     TEST_ASSERT(d.getVal<std::string>("foo") == d2.getVal<std::string>("foo"));
     TEST_ASSERT(d.getVal<double>("foo2") == d2.getVal<double>("foo2"));
-    TEST_ASSERT(d.getVal<std::vector<int> >("foo3") ==
-                d2.getVal<std::vector<int> >("foo3"));
+    TEST_ASSERT(d.getVal<std::vector<int>>("foo3") ==
+                d2.getVal<std::vector<int>>("foo3"));
   }
 
   {  // a few tests to make sure copying/updating with nonPOD data is ok
@@ -610,8 +611,8 @@ void testUpdate() {
       d2.update(d, true);
       TEST_ASSERT(d2.getVal<std::string>("foo") == "1.3");
       TEST_ASSERT(d.getVal<double>("foo2") == d2.getVal<double>("foo2"));
-      TEST_ASSERT(d.getVal<std::vector<int> >("foo3") ==
-                  d2.getVal<std::vector<int> >("foo3"));
+      TEST_ASSERT(d.getVal<std::vector<int>>("foo3") ==
+                  d2.getVal<std::vector<int>>("foo3"));
     }
 
     {
@@ -619,15 +620,15 @@ void testUpdate() {
       d2.setVal("foo", 1);
       TEST_ASSERT(1 == d2.getVal<int>("foo"));
       TEST_ASSERT(d.getVal<double>("foo2") == d2.getVal<double>("foo2"));
-      TEST_ASSERT(d.getVal<std::vector<int> >("foo3") ==
-                  d2.getVal<std::vector<int> >("foo3"));
+      TEST_ASSERT(d.getVal<std::vector<int>>("foo3") ==
+                  d2.getVal<std::vector<int>>("foo3"));
     }
 
     {
       Dict d2(d);
       TEST_ASSERT(d.getVal<double>("foo2") == d2.getVal<double>("foo2"));
-      TEST_ASSERT(d.getVal<std::vector<int> >("foo3") ==
-                  d2.getVal<std::vector<int> >("foo3"));
+      TEST_ASSERT(d.getVal<std::vector<int>>("foo3") ==
+                  d2.getVal<std::vector<int>>("foo3"));
     }
   }
   BOOST_LOG(rdErrorLog) << "\tdone" << std::endl;

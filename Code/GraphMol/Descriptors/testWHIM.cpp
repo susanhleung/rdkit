@@ -7,6 +7,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/test.h>
 #include <RDGeneral/Invariant.h>
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/FileParsers/MolSupplier.h>
@@ -136,7 +137,7 @@ void testWHIM() {
   // std::ofstream outstrm(ofName.c_str());
 
   std::string line;
-  std::vector<std::vector<std::string> > data;
+  std::vector<std::vector<std::string>> data;
 
   while (std::getline(instrm, line)) {
     std::string phrase;

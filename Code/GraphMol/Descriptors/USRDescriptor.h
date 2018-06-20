@@ -35,6 +35,7 @@
   \brief Contains the USR descriptor. Use MolDescriptors.h in client code.
 
 */
+#include <RDBoost/export.h>
 #ifndef __RD_USR_H__
 #define __RD_USR_H__
 
@@ -59,7 +60,7 @@ namespace Descriptors {
   \param confId       the conformer Id
 
 */
-void USR(const ROMol &mol, std::vector<double> &descriptor, int confId = -1);
+RDKIT_DESCRIPTORS_EXPORT void USR(const ROMol &mol, std::vector<double> &descriptor, int confId = -1);
 
 /*!
   Calculates the ultra-fast shape recognition with CREDO atom types (USRCAT)
@@ -75,8 +76,8 @@ void USR(const ROMol &mol, std::vector<double> &descriptor, int confId = -1);
   \param confId       the conformer Id
 
 */
-void USRCAT(const ROMol &mol, std::vector<double> &descriptor,
-            std::vector<std::vector<unsigned int> > &atomIds, int confId = -1);
+RDKIT_DESCRIPTORS_EXPORT void USRCAT(const ROMol &mol, std::vector<double> &descriptor,
+            std::vector<std::vector<unsigned int>> &atomIds, int confId = -1);
 /*!
   Calculates the four distance distributions for the USR descriptor
 
@@ -85,8 +86,8 @@ void USRCAT(const ROMol &mol, std::vector<double> &descriptor,
   \param points      storage for the four points
 
 */
-void calcUSRDistributions(const RDGeom::Point3DConstPtrVect &coords,
-                          std::vector<std::vector<double> > &dist,
+RDKIT_DESCRIPTORS_EXPORT void calcUSRDistributions(const RDGeom::Point3DConstPtrVect &coords,
+                          std::vector<std::vector<double>> &dist,
                           std::vector<RDGeom::Point3D> &points);
 
 /*!
@@ -97,9 +98,9 @@ void calcUSRDistributions(const RDGeom::Point3DConstPtrVect &coords,
   \param dist   storage for the distance distributions
 
 */
-void calcUSRDistributionsFromPoints(const RDGeom::Point3DConstPtrVect &coords,
+RDKIT_DESCRIPTORS_EXPORT void calcUSRDistributionsFromPoints(const RDGeom::Point3DConstPtrVect &coords,
                                     const std::vector<RDGeom::Point3D> &points,
-                                    std::vector<std::vector<double> > &dist);
+                                    std::vector<std::vector<double>> &dist);
 
 /*!
   Calculates the USR descriptor from the four distance distributions
@@ -108,7 +109,7 @@ void calcUSRDistributionsFromPoints(const RDGeom::Point3DConstPtrVect &coords,
   \param descriptor  storage for the computed USR descriptor
 
 */
-void calcUSRFromDistributions(const std::vector<std::vector<double> > &dist,
+RDKIT_DESCRIPTORS_EXPORT void calcUSRFromDistributions(const std::vector<std::vector<double>> &dist,
                               std::vector<double> &descriptor);
 
 /*!
@@ -120,7 +121,7 @@ void calcUSRFromDistributions(const std::vector<std::vector<double> > &dist,
 
   \return the score
 */
-double calcUSRScore(const std::vector<double> &d1,
+RDKIT_DESCRIPTORS_EXPORT double calcUSRScore(const std::vector<double> &d1,
                     const std::vector<double> &d2,
                     const std::vector<double> &weights);
 

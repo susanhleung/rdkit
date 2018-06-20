@@ -7,6 +7,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/test.h>
 #include <RDGeneral/utils.h>
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/RDKitQueries.h>
@@ -170,7 +171,7 @@ void timeTest(bool doLong = 0) {
   BOOST_LOG(rdErrorLog) << "-------------------------------------" << std::endl;
   BOOST_LOG(rdErrorLog) << "Timing reads." << std::endl;
 
-  t1 = std::time(0);
+  t1 = std::time(nullptr);
   SmilesMolSupplier suppl(smiName, "\t", 0, 1, false);
   int count = 0;
   while (!suppl.atEnd()) {
@@ -180,20 +181,20 @@ void timeTest(bool doLong = 0) {
     if (!doLong && count >= 100) break;
     delete m1;
   }
-  t2 = std::time(0);
+  t2 = std::time(nullptr);
   BOOST_LOG(rdInfoLog) << " Smiles time: " << std::difftime(t2, t1)
                        << std::endl;
   ;
 
   std::ifstream inStream(pklName.c_str(), std::ios_base::binary);
-  t1 = std::time(0);
+  t1 = std::time(nullptr);
   while (count > 0) {
     ROMol m2;
     MolPickler::molFromPickle(inStream, m2);
     count--;
     if (!doLong && count >= 100) break;
   }
-  t2 = std::time(0);
+  t2 = std::time(nullptr);
   BOOST_LOG(rdInfoLog) << " Pickle time: " << std::difftime(t2, t1)
                        << std::endl;
   ;
@@ -285,7 +286,7 @@ void testIssue219() {
   MolPickler::molFromPickle(pickle, *m2);
   TEST_ASSERT(m1->getNumAtoms() == m2->getNumAtoms());
 
-  Conformer *conf = new Conformer(2);
+  auto *conf = new Conformer(2);
   conf->setId(23);
   m1->addConformer(conf);
   MolPickler::pickleMol(*m1, pickle);
@@ -708,7 +709,7 @@ void testIssue2788233(bool doLong = 0) {
 
     std::string pickle;
     MolPickler::pickleMol(*m, pickle);
-    RWMol *m2 = new RWMol();
+    auto *m2 = new RWMol();
     MolPickler::molFromPickle(pickle, *m2);
     TEST_ASSERT(m2->getNumAtoms() == 2);
     TEST_ASSERT(m2->getNumBonds() == 0);
@@ -729,7 +730,7 @@ void testIssue3202580() {
     TEST_ASSERT(feq(m1->getAtomWithIdx(0)->getMass(), 12.011, .001));
     std::string pickle;
     MolPickler::pickleMol(*m1, pickle);
-    RWMol *m2 = new RWMol();
+    auto *m2 = new RWMol();
     MolPickler::molFromPickle(pickle, *m2);
     TEST_ASSERT(feq(m2->getAtomWithIdx(0)->getMass(), 12.011, .001));
     delete m1;
@@ -741,7 +742,7 @@ void testIssue3202580() {
     TEST_ASSERT(feq(m1->getAtomWithIdx(0)->getMass(), 12.000, .001));
     std::string pickle;
     MolPickler::pickleMol(*m1, pickle);
-    RWMol *m2 = new RWMol();
+    auto *m2 = new RWMol();
     MolPickler::molFromPickle(pickle, *m2);
     TEST_ASSERT(feq(m2->getAtomWithIdx(0)->getMass(), 12.000, .001));
     delete m1;
@@ -756,7 +757,7 @@ void testIssue3202580() {
     TEST_ASSERT(feq(m1->getAtomWithIdx(0)->getMass(), 13.003, .001));
     std::string pickle;
     MolPickler::pickleMol(*m1, pickle);
-    RWMol *m2 = new RWMol();
+    auto *m2 = new RWMol();
     MolPickler::molFromPickle(pickle, *m2);
     TEST_ASSERT(feq(m2->getAtomWithIdx(0)->getMass(), 13.003, .001));
     delete m1;
@@ -780,7 +781,7 @@ void testIssue3316407() {
 
     std::string pickle;
     MolPickler::pickleMol(*m, pickle);
-    RWMol *m2 = new RWMol();
+    auto *m2 = new RWMol();
     MolPickler::molFromPickle(pickle, *m2);
     TEST_ASSERT(m2->getNumAtoms() == 5);
     for (unsigned int i = 0; i < m->getNumAtoms(); ++i) {
@@ -846,7 +847,7 @@ void testIssue3496759() {
       std::string smi2 = MolToSmiles(*m2, 1);
       std::string sma2 = MolToSmarts(*m2);
 
-      // std::cerr<<"smi match: "<<smi1<<" "<<smi2<<std::endl;
+      std::cerr << "smi match: " << smi1 << " " << smi2 << std::endl;
       TEST_ASSERT(smi1 == smi2);
       // std::cerr<<"sma match: "<<sma1<<" "<<sma2<<std::endl;
       TEST_ASSERT(sma1 == sma2);
@@ -936,7 +937,7 @@ void testAtomResidues() {
   BOOST_LOG(rdInfoLog) << "Testing residue information handling on atoms"
                        << std::endl;
   {
-    RWMol *m = new RWMol();
+    auto *m = new RWMol();
 
     m->addAtom(new Atom(6));
     m->addAtom(new Atom(6));
@@ -1212,7 +1213,7 @@ void testGithub1563() {
       << "Testing Github 1563: Add a canned Atom query for heavy atom degree"
       << std::endl;
   RWMol m;
-  QueryAtom *qa = new QueryAtom();
+  auto *qa = new QueryAtom();
   qa->setQuery(makeAtomHeavyAtomDegreeQuery(3));
   m.addAtom(qa);
   TEST_ASSERT(m.getAtomWithIdx(0)->hasQuery());

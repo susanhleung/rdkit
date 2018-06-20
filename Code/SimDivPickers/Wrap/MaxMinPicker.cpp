@@ -22,6 +22,7 @@
 #include <SimDivPickers/MaxMinPicker.h>
 #include <SimDivPickers/HierarchicalClusterPicker.h>
 #include <iostream>
+#include <utility>
 
 namespace python = boost::python;
 namespace RDPickers {
@@ -56,7 +57,7 @@ RDKit::INT_VECT MaxMinPicks(MaxMinPicker *picker, python::object distMat,
 
 class pyobjFunctor {
  public:
-  pyobjFunctor(python::object obj) : dp_obj(obj) {}
+  pyobjFunctor(python::object obj) : dp_obj(std::move(obj)) {}
   ~pyobjFunctor() {}
   double operator()(unsigned int i, unsigned int j) {
     return python::extract<double>(dp_obj(i, j));
@@ -86,8 +87,8 @@ RDKit::INT_VECT LazyMaxMinPicks(MaxMinPicker *picker, python::object distFunc,
                                 python::object firstPicks, int seed,
                                 python::object useCache) {
   if (useCache != python::object()) {
-    BOOST_LOG(rdWarningLog)
-        << "the useCache argument is deprecated and ignored" << std::endl;
+    BOOST_LOG(rdWarningLog) << "the useCache argument is deprecated and ignored"
+                            << std::endl;
   }
   pyobjFunctor functor(distFunc);
   RDKit::INT_VECT res;
@@ -142,8 +143,8 @@ RDKit::INT_VECT LazyVectorMaxMinPicks(MaxMinPicker *picker, python::object objs,
                                       python::object firstPicks, int seed,
                                       python::object useCache) {
   if (useCache != python::object()) {
-    BOOST_LOG(rdWarningLog)
-        << "the useCache argument is deprecated and ignored" << std::endl;
+    BOOST_LOG(rdWarningLog) << "the useCache argument is deprecated and ignored"
+                            << std::endl;
   }
   std::vector<const ExplicitBitVect *> bvs(poolSize);
   for (int i = 0; i < poolSize; ++i) {

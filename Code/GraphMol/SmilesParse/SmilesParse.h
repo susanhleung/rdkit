@@ -7,6 +7,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/export.h>
 #ifndef _RD_SMILESPARSE_H_
 #define _RD_SMILESPARSE_H_
 
@@ -17,24 +18,22 @@
 namespace RDKit {
 class RWMol;
 
-struct SmilesParserParams {
-	int debugParse;
-	bool sanitize;
-	std::map<std::string, std::string> *replacements;
-	bool allowCXSMILES;
-	bool parseName;
-	bool removeHs;
-	SmilesParserParams() :
-		debugParse(0),
-		sanitize(true),
-		replacements(NULL),
-		allowCXSMILES(false),
-		parseName(false),
-		removeHs(true)
-	{};
+struct RDKIT_SMILESPARSE_EXPORT SmilesParserParams {
+  int debugParse;
+  bool sanitize;
+  std::map<std::string, std::string> *replacements;
+  bool allowCXSMILES;
+  bool parseName;
+  bool removeHs;
+  SmilesParserParams()
+      : debugParse(0),
+        sanitize(true),
+        replacements(NULL),
+        allowCXSMILES(true),
+        parseName(false),
+        removeHs(true){};
 };
-RWMol *SmilesToMol(const std::string &smi, const SmilesParserParams &params);
-
+RDKIT_SMILESPARSE_EXPORT RWMol *SmilesToMol(const std::string &smi, const SmilesParserParams &params);
 
 //! Construct a molecule from a SMILES string
 /*!
@@ -63,22 +62,21 @@ RWMol *SmilesToMol(const std::string &smi, const SmilesParserParams &params);
  \endcode
 
  */
-inline RWMol *SmilesToMol(const std::string &smi, int debugParse = 0,
-                   bool sanitize = true,
-                   std::map<std::string, std::string> *replacements = 0){
+inline RWMol *SmilesToMol(
+    const std::string &smi, int debugParse = 0, bool sanitize = true,
+    std::map<std::string, std::string> *replacements = 0) {
   SmilesParserParams params;
   params.debugParse = debugParse;
   params.replacements = replacements;
-  if(sanitize) {
-    params.sanitize=true;
-    params.removeHs=true;
+  if (sanitize) {
+    params.sanitize = true;
+    params.removeHs = true;
   } else {
-    params.sanitize=false;
-    params.removeHs=false;
+    params.sanitize = false;
+    params.removeHs = false;
   }
-  return SmilesToMol(smi,params);
+  return SmilesToMol(smi, params);
 };
-
 
 //! Construct a molecule from a SMARTS string
 /*!
@@ -92,11 +90,11 @@ inline RWMol *SmilesToMol(const std::string &smi, int debugParse = 0,
  \return a pointer to the new molecule; the caller is responsible for free'ing
  this.
  */
-RWMol *SmartsToMol(const std::string &sma, int debugParse = 0,
+RDKIT_SMILESPARSE_EXPORT RWMol *SmartsToMol(const std::string &sma, int debugParse = 0,
                    bool mergeHs = false,
                    std::map<std::string, std::string> *replacements = 0);
 
-class SmilesParseException : public std::exception {
+class RDKIT_SMILESPARSE_EXPORT SmilesParseException : public std::exception {
  public:
   SmilesParseException(const char *msg) : _msg(msg){};
   SmilesParseException(const std::string msg) : _msg(msg){};

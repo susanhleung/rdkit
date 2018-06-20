@@ -22,6 +22,7 @@
 #include <RDGeneral/LocaleSwitcher.h>
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/FileParsers/MolWriters.h>
+#include <GraphMol/FileParsers/FileParsers.h>
 
 #include <GraphMol/MonomerInfo.h>
 
@@ -77,7 +78,7 @@ std::string GetPDBAtomLine(const Atom *atom, const Conformer *conf,
     ss << *ptr;
     ss << "   ";
   } else {
-    info = (AtomPDBResidueInfo *)0;
+    info = (AtomPDBResidueInfo *)nullptr;
     unsigned int atno = atom->getAtomicNum();
     if (elem.find(atno) == elem.end()) {
       elem[atno] = 1;
@@ -147,7 +148,7 @@ std::string GetPDBBondLines(const Atom *atom, bool all, bool both, bool mult,
   ROMol *mol = &atom->getOwningMol();
   for (ROMol::OBOND_ITER_PAIR bondIt = mol->getAtomBonds(atom);
        bondIt.first != bondIt.second; ++bondIt.first) {
-    Bond *bptr = (*mol)[*bondIt.first].get();
+    Bond *bptr = (*mol)[*bondIt.first];
     Atom *nptr = bptr->getOtherAtom(atom);
     unsigned int dst = nptr->getIdx() + 1;
     if (dst < src && !both) continue;
@@ -262,7 +263,7 @@ std::string MolToPDBBlock(const ROMol &imol, int confId, unsigned int flavor) {
     }
   } else {
     if (confId < 0 && mol.getNumConformers() == 0) {
-      conf = 0;
+      conf = nullptr;
     } else {
       conf = &(mol.getConformer(confId));
     }
@@ -285,7 +286,7 @@ std::string MolToPDBBlock(const ROMol &imol, int confId, unsigned int flavor) {
 
 PDBWriter::PDBWriter(const std::string &fileName, unsigned int flavor) {
   if (fileName != "-") {
-    std::ofstream *tmpStream = new std::ofstream(fileName.c_str());
+    auto *tmpStream = new std::ofstream(fileName.c_str());
     df_owner = true;
     if (!tmpStream || !(*tmpStream) || (tmpStream->bad())) {
       std::ostringstream errout;
@@ -315,7 +316,7 @@ PDBWriter::PDBWriter(std::ostream *outStream, bool takeOwnership,
 
 PDBWriter::~PDBWriter() {
   // close the writer if it's still open:
-  if (dp_ostream != NULL) close();
+  if (dp_ostream != nullptr) close();
 }
 
 void PDBWriter::write(const ROMol &mol, int confId) {

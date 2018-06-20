@@ -13,6 +13,7 @@
 #include <vector>
 #include <map>
 
+#include "SequenceParsers.h"
 #include <GraphMol/GraphMol.h>
 #include <GraphMol/MolOps.h>
 #include <GraphMol/MonomerInfo.h>
@@ -21,7 +22,7 @@ namespace RDKit {
 
 static Atom *CreateAAAtom(RWMol *mol, const char *name,
                           AtomPDBResidueInfo &info) {
-  Atom *atom = (Atom *)0;
+  Atom *atom = (Atom *)nullptr;
 
   if (name[0] == ' ' && name[1] == 'C') {
     atom = new Atom(6);
@@ -82,9 +83,9 @@ static void CreateAminoAcid(RWMol *mol, const char *aa, Atom *&r1, Atom *&r2,
                             Atom *&r3, AtomPDBResidueInfo &info) {
   Atom *atom[10];
 
-  r1 = (Atom *)0;
-  r2 = (Atom *)0;
-  r3 = (Atom *)0;
+  r1 = (Atom *)nullptr;
+  r2 = (Atom *)nullptr;
+  r3 = (Atom *)nullptr;
 
   int resno = info.getResidueNumber();
   info.setResidueNumber(resno + 1);
@@ -582,7 +583,7 @@ static void CreateAminoAcid(RWMol *mol, const char *aa, Atom *&r1, Atom *&r2,
 
 static RWMol *AASequenceToMol(const char *seq, bool lowerD) {
   AtomPDBResidueInfo info;
-  Atom *prev = (Atom *)0;
+  Atom *prev = (Atom *)nullptr;
   char chain[2];
 
   chain[0] = 'A';
@@ -593,12 +594,12 @@ static RWMol *AASequenceToMol(const char *seq, bool lowerD) {
   info.setResidueNumber(0);
   info.setInsertionCode(" ");
   info.setChainId(chain);
-  RWMol *mol = new RWMol();
+  auto *mol = new RWMol();
 
   while (*seq) {
-    Atom *r1 = (Atom *)0;
-    Atom *r2 = (Atom *)0;
-    Atom *r3 = (Atom *)0;
+    Atom *r1 = (Atom *)nullptr;
+    Atom *r2 = (Atom *)nullptr;
+    Atom *r3 = (Atom *)nullptr;
 
     switch (*seq) {
       case '\n':
@@ -621,14 +622,14 @@ static RWMol *AASequenceToMol(const char *seq, bool lowerD) {
             info.setChainId(chain);
           }
           info.setResidueNumber(0);
-          prev = (Atom *)0;
+          prev = (Atom *)nullptr;
         }
         seq++;
         continue;
 
       default:
         delete mol;
-        return (RWMol *)0;
+        return (RWMol *)nullptr;
 
       case 'A':
         CreateAminoAcid(mol, "ALA", r1, r2, r3, info);
@@ -767,8 +768,8 @@ static void CreateNucleicAcid(RWMol *mol, const char *na, Atom *&r1, Atom *&r2,
 {
   Atom *atom[32];
 
-  r1 = (Atom *)0;
-  r2 = (Atom *)0;
+  r1 = (Atom *)nullptr;
+  r2 = (Atom *)nullptr;
 
   int resno = info.getResidueNumber();
   info.setResidueNumber(resno + 1);
@@ -972,18 +973,18 @@ static RWMol *NASequenceToMol(const char *seq, bool Dna,
   chain[0] = 'A';
   chain[1] = '\0';
 
-  Atom *prev = (Atom *)0;
+  Atom *prev = (Atom *)nullptr;
   AtomPDBResidueInfo info;
   info.setSerialNumber(1);
   info.setAltLoc(" ");
   info.setResidueNumber(0);
   info.setInsertionCode(" ");
   info.setChainId(chain);
-  RWMol *mol = new RWMol();
+  auto *mol = new RWMol();
 
   while (*seq) {
-    Atom *r1 = (Atom *)0;
-    Atom *r2 = (Atom *)0;
+    Atom *r1 = (Atom *)nullptr;
+    Atom *r2 = (Atom *)nullptr;
 
     switch (*seq) {
       case '\n':
@@ -1007,13 +1008,13 @@ static RWMol *NASequenceToMol(const char *seq, bool Dna,
           }
           info.setResidueNumber(0);
         }
-        prev = (Atom *)0;
+        prev = (Atom *)nullptr;
         seq++;
         continue;
 
       default:
         delete mol;
-        return (RWMol *)0;
+        return (RWMol *)nullptr;
 
       case 'A':
       case 'a':
@@ -1047,7 +1048,7 @@ static RWMol *NASequenceToMol(const char *seq, bool Dna,
 
 
 RWMol *SequenceToMol(const char *seq, bool sanitize, int flavor) {
-  if (!seq) return (RWMol *)0;
+  if (!seq) return (RWMol *)nullptr;
   RWMol *mol;
 
   switch (flavor) {
@@ -1068,7 +1069,7 @@ RWMol *SequenceToMol(const char *seq, bool sanitize, int flavor) {
     case 9:  mol = NASequenceToMol(seq,true,true,true);    break;
 
     default:
-      return (RWMol*)0;
+      return (RWMol *)nullptr;
   }
   if (sanitize && mol)
     MolOps::sanitizeMol(*mol);
@@ -1089,7 +1090,7 @@ RWMol *SequenceToMol(const std::string &seq, bool sanitize, bool lowerD) {
 }
 
 RWMol *FASTAToMol(const char *seq, bool sanitize, int flavor) {
-  if (!seq) return (RWMol *)0;
+  if (!seq) return (RWMol *)nullptr;
 
   std::string title;
   if (seq[0] == '>') {
@@ -1119,8 +1120,8 @@ struct HELMMonomer {
   Atom *r3;
   Atom *oxt;
 
-  HELMMonomer() : r1(0), r2(0), r3(0), oxt(0) {}
-  HELMMonomer(Atom *x, Atom *y, Atom *z) : r1(x), r2(y), r3(z), oxt(0) {}
+  HELMMonomer() : r1(nullptr), r2(nullptr), r3(nullptr), oxt(nullptr) {}
+  HELMMonomer(Atom *x, Atom *y, Atom *z) : r1(x), r2(y), r3(z), oxt(nullptr) {}
 };
 
 static const char *GetHELMOneLetterCode(char ch) {
@@ -1166,7 +1167,7 @@ static const char *GetHELMOneLetterCode(char ch) {
     case 'Y':
       return "TYR";
   }
-  return (char *)0;
+  return (char *)nullptr;
 }
 
 static bool IsHELMMonomerIDChar(char ch) {
@@ -1312,7 +1313,7 @@ static const char *LookupHELMPeptideMonomer(const char *ptr) {
       if (ptr[1] == 'e' && ptr[2] == 'C' && ptr[3] == '\0') return "MSE";
       break;
   }
-  return (const char *)0;
+  return (const char *)nullptr;
 }
 
 static const char *ParseHELMPeptide(RWMol *mol, const char *ptr,
@@ -1332,7 +1333,7 @@ static const char *ParseHELMPeptide(RWMol *mol, const char *ptr,
   info.setChainId(chain);
 
   if (ptr[0] == '[' && ptr[1] == 'a' && ptr[2] == 'c' && ptr[3] == ']') {
-    if (ptr[4] != '.') return (const char *)0;
+    if (ptr[4] != '.') return (const char *)nullptr;
     info.setResidueNumber(-2);
     CreateAminoAcid(mol, "ACE", curr.r1, curr.r2, curr.r3, info);
     vseq.push_back(curr);
@@ -1342,22 +1343,22 @@ static const char *ParseHELMPeptide(RWMol *mol, const char *ptr,
   }
 
   for (;;) {
-    const char *name = 0;
+    const char *name = nullptr;
     if (*ptr == '[') {
       std::string tmp;
       ptr++;
       while (IsHELMMonomerIDChar(*ptr)) tmp += *ptr++;
-      if (*ptr != ']') return (char *)0;
+      if (*ptr != ']') return (char *)nullptr;
       name = LookupHELMPeptideMonomer(tmp.c_str());
     } else
       name = GetHELMOneLetterCode(*ptr);
-    if (!name) return (const char *)0;
+    if (!name) return (const char *)nullptr;
     ptr++;
 
     CreateAminoAcid(mol, name, curr.r1, curr.r2, curr.r3, info);
     if (len && vseq[len - 1].r2 && curr.r1) {
       CreateAABond(mol, vseq[len - 1].r2, curr.r1, 1);
-      vseq[len - 1].r2 = 0;
+      vseq[len - 1].r2 = nullptr;
     }
     vseq.push_back(curr);
     len++;
@@ -1365,27 +1366,27 @@ static const char *ParseHELMPeptide(RWMol *mol, const char *ptr,
     if (*ptr == '.') {
       if (ptr[1] == '[' && ptr[2] == 'a' && ptr[3] == 'm' && ptr[4] == ']' &&
           ptr[5] == '}') {
-        if (!vseq[len - 1].r2) return (const char *)0;
+        if (!vseq[len - 1].r2) return (const char *)nullptr;
         int resno = info.getResidueNumber();
         info.setResidueNumber(resno + 1);
         info.setIsHeteroAtom(true);
         info.setResidueName("NH2");
         Atom *n = CreateAAAtom(mol, " N  ", info);
         CreateAABond(mol, vseq[len - 1].r2, n, 1);
-        vseq[len - 1].r2 = (Atom *)0;
+        vseq[len - 1].r2 = (Atom *)nullptr;
         vseq.push_back(HELMMonomer());
         len++;
         return ptr + 5;
       }
       ptr++;
     } else if (*ptr == '}') {
-      if (!vseq[len - 1].r2) return (const char *)0;
+      if (!vseq[len - 1].r2) return (const char *)nullptr;
       Atom *oxt = CreateAAAtom(mol, " OXT", info);
       CreateAABond(mol, vseq[len - 1].r2, oxt, 1);
       vseq[len - 1].oxt = oxt;
       return ptr;
     } else
-      return (const char *)0;
+      return (const char *)nullptr;
   }
 }
 
@@ -1395,10 +1396,9 @@ static const char *ParseHELMNucleic(RWMol *mol, const char *ptr,
     return ptr;
 
   bool PCap5 = false;
-  Atom *prev = 0;
-  Atom *r1 = 0;
-  Atom *r2 = 0;
-
+  Atom *prev = nullptr;
+  Atom *r1 = nullptr;
+  Atom *r2 = nullptr;
 
   AtomPDBResidueInfo info;
   info.setSerialNumber(1);
@@ -1415,7 +1415,7 @@ static const char *ParseHELMNucleic(RWMol *mol, const char *ptr,
   }
 
   for (;;) {
-    const char *name = 0;
+    const char *name = nullptr;
     if (*ptr == 'R' && ptr[1]=='(') {
       if (ptr[2]=='A') {
         if (ptr[3]==')') {
@@ -1472,8 +1472,7 @@ static const char *ParseHELMNucleic(RWMol *mol, const char *ptr,
         }
       }
     }
-    if (!name)
-      return (const char *)0;
+    if (!name) return (const char *)nullptr;
 
     CreateNucleicAcid(mol,name,r1,r2,info,PCap5);
     if (prev && r1)
@@ -1484,8 +1483,7 @@ static const char *ParseHELMNucleic(RWMol *mol, const char *ptr,
       return ptr;
     if (*ptr == '.')
       ptr++;
-    if (*ptr != 'P')
-      return (const char*)0;
+    if (*ptr != 'P') return (const char *)nullptr;
     ptr++;
     if (*ptr == '}') {
       CreatePCap3(mol,prev,info);
@@ -1611,8 +1609,8 @@ static bool ParseHELM(RWMol *mol, const char *ptr) {
       Atom *dst = (*vseq2)[res2 - 1].r3;
       if (src && dst && src != dst) {
         CreateAABond(mol, src, dst, 1);
-        (*vseq1)[res1 - 1].r3 = (Atom *)0;
-        (*vseq2)[res2 - 1].r3 = (Atom *)0;
+        (*vseq1)[res1 - 1].r3 = (Atom *)nullptr;
+        (*vseq2)[res2 - 1].r3 = (Atom *)nullptr;
       } else
         return false;
     } else if (res1r == 1 && res2r == 2) {
@@ -1622,8 +1620,8 @@ static bool ParseHELM(RWMol *mol, const char *ptr) {
       if (src && dst && oxt && src != dst) {
         mol->removeAtom(oxt);
         CreateAABond(mol, src, dst, 1);
-        (*vseq1)[res1 - 1].r1 = (Atom *)0;
-        (*vseq2)[res2 - 1].r2 = (Atom *)0;
+        (*vseq1)[res1 - 1].r1 = (Atom *)nullptr;
+        (*vseq2)[res2 - 1].r2 = (Atom *)nullptr;
       } else
         return false;
     } else if (res1r == 2 && res2r == 1) {
@@ -1633,8 +1631,8 @@ static bool ParseHELM(RWMol *mol, const char *ptr) {
       if (src && dst && oxt && src != dst) {
         mol->removeAtom(oxt);
         CreateAABond(mol, dst, src, 1);
-        (*vseq1)[res1 - 1].r2 = (Atom *)0;
-        (*vseq2)[res2 - 1].r1 = (Atom *)0;
+        (*vseq1)[res1 - 1].r2 = (Atom *)nullptr;
+        (*vseq2)[res2 - 1].r1 = (Atom *)nullptr;
       } else
         return false;
     } else
@@ -1649,7 +1647,7 @@ static bool ParseHELM(RWMol *mol, const char *ptr) {
 }
 
 RWMol *HELMToMol(const char *helm, bool sanitize) {
-  RWMol *mol = new RWMol();
+  auto *mol = new RWMol();
 
   const char *ptr = helm;
   if (ptr[0] == '$' && ptr[1] == '$' && ptr[2] == '$' && ptr[3] == '$')
@@ -1660,7 +1658,7 @@ RWMol *HELMToMol(const char *helm, bool sanitize) {
     return mol;
   }
   delete mol;
-  return (RWMol *)0;
+  return (RWMol *)nullptr;
 }
 
 RWMol *HELMToMol(const std::string &helm, bool sanitize) {

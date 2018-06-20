@@ -19,6 +19,7 @@
 // library-specific drawing code such as drawing lines, writing strings
 // etc.
 
+#include <RDBoost/export.h>
 #ifndef RDKITMOLDRAW2D_H
 #define RDKITMOLDRAW2D_H
 
@@ -59,7 +60,7 @@ inline void assignBWPalette(ColourPalette &palette) {
   palette[-1] = DrawColour(0, 0, 0);
 };
 
-struct MolDrawOptions {
+struct RDKIT_MOLDRAW2D_EXPORT MolDrawOptions {
   bool atomLabelDeuteriumTritium;  // toggles replacing 2H with D and 3H with T
   bool dummiesAreAttachments;      // draws "breaks" at dummy atoms
   bool circleAtoms;                // draws circles under highlighted atoms
@@ -129,7 +130,7 @@ struct MolDrawOptions {
 };
 
 //! MolDraw2D is the base class for doing 2D renderings of molecules
-class MolDraw2D {
+class RDKIT_MOLDRAW2D_EXPORT MolDraw2D {
  public:
   typedef enum { C = 0, N, E, S, W } OrientType;
   typedef enum {
@@ -430,7 +431,7 @@ class MolDraw2D {
 
   virtual void drawLine(const Point2D &cds1, const Point2D &cds2,
                         const DrawColour &col1, const DrawColour &col2);
-  void drawBond(const ROMol &mol, const BOND_SPTR &bond, int at1_idx,
+  void drawBond(const ROMol &mol, const Bond* bond, int at1_idx,
                 int at2_idx, const std::vector<int> *highlight_atoms = NULL,
                 const std::map<int, DrawColour> *highlight_atom_map = NULL,
                 const std::vector<int> *highlight_bonds = NULL,
@@ -444,12 +445,12 @@ class MolDraw2D {
   // cds1 and cds2 are 2 atoms in a ring.  Returns the perpendicular pointing
   // into
   // the ring.
-  Point2D bondInsideRing(const ROMol &mol, const BOND_SPTR &bond,
+  Point2D bondInsideRing(const ROMol &mol, const Bond* bond,
                          const Point2D &cds1, const Point2D &cds2);
   // cds1 and cds2 are 2 atoms in a chain double bond.  Returns the
   // perpendicular
   // pointing into the inside of the bond
-  Point2D bondInsideDoubleBond(const ROMol &mol, const BOND_SPTR &bond);
+  Point2D bondInsideDoubleBond(const ROMol &mol, const Bond* bond);
   // calculate normalised perpendicular to vector between two coords, such
   // that
   // it's inside the angle made between (1 and 2) and (2 and 3).

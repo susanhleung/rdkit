@@ -8,6 +8,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/test.h>
 #include "Matrix.h"
 #include "SquareMatrix.h"
 #include "SymmMatrix.h"
@@ -31,7 +32,7 @@ void test1Vector() {
   CHECK_INVARIANT(RDKit::feq(v1.getVal(1), 2.0), "");
   CHECK_INVARIANT(RDKit::feq(v1.normL1(), 8.0), "");
 
-  double *data = new double[3];
+  auto *data = new double[3];
   data[0] = 1.0;
   data[1] = 2.0;
   data[2] = 3.0;
@@ -119,7 +120,7 @@ void test3SquareMatrix() {
   CHECK_INVARIANT(RDKit::feq(B.getVal(1, 0), 15.0), "");
   CHECK_INVARIANT(RDKit::feq(B.getVal(1, 1), 22.0), "");
 
-  double *data = new double[4];
+  auto *data = new double[4];
   data[0] = 1.0;
   data[1] = 2.0;
   data[2] = 3.0;

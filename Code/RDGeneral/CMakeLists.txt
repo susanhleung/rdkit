@@ -1,6 +1,12 @@
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/versions.cpp.cmake
                ${CMAKE_CURRENT_SOURCE_DIR}/versions.cpp )
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/versions.h.cmake
+               ${CMAKE_CURRENT_SOURCE_DIR}/versions.h )
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/RDConfig.h.cmake
+              ${CMAKE_CURRENT_SOURCE_DIR}/RDConfig.h )
 
+
+add_definitions(-DRDKIT_RDGENERAL_BUILD)
 rdkit_library(RDGeneral
               Invariant.cpp types.cpp utils.cpp RDLog.cpp Dict.cpp
               LocaleSwitcher.cpp versions.cpp SHARED
@@ -28,7 +34,7 @@ if(MINGW)
   endif()
 endif(MINGW)
 
-target_link_libraries(RDGeneral ${RDKit_THREAD_LIBS} ${MSVC_RUNTIME_DLL})
+target_link_libraries(RDGeneral PUBLIC ${RDKit_THREAD_LIBS} ${MSVC_RUNTIME_DLL})
 
 rdkit_headers(Exceptions.h
               BadFileException.h
@@ -48,6 +54,7 @@ rdkit_headers(Exceptions.h
               types.h
               utils.h
               versions.h
+              RDConfig.h
               LocaleSwitcher.h
               Ranking.h
               hanoiSort.h
@@ -58,4 +65,3 @@ if (NOT RDK_INSTALL_INTREE)
 endif (NOT RDK_INSTALL_INTREE)
 rdkit_test(testDict testDict.cpp LINK_LIBRARIES RDGeneral)
 rdkit_test(testRDValue testRDValue.cpp LINK_LIBRARIES RDGeneral)
-

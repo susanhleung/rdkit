@@ -25,7 +25,7 @@ ATOM_EQUALS_QUERY *makeAtomRingBondCountQuery(int what) {
 
 ATOM_EQUALS_QUERY *makeAtomInRingOfSizeQuery(int tgt) {
   RANGE_CHECK(3, tgt, 20);
-  ATOM_EQUALS_QUERY *res = new ATOM_EQUALS_QUERY;
+  auto *res = new ATOM_EQUALS_QUERY;
   res->setVal(tgt);
   switch (tgt) {
     case 3:
@@ -89,7 +89,7 @@ ATOM_EQUALS_QUERY *makeAtomInRingOfSizeQuery(int tgt) {
 }
 BOND_EQUALS_QUERY *makeBondInRingOfSizeQuery(int tgt) {
   RANGE_CHECK(3, tgt, 20);
-  BOND_EQUALS_QUERY *res = new BOND_EQUALS_QUERY;
+  auto *res = new BOND_EQUALS_QUERY;
   res->setVal(tgt);
   switch (tgt) {
     case 3:
@@ -153,7 +153,7 @@ BOND_EQUALS_QUERY *makeBondInRingOfSizeQuery(int tgt) {
 
 ATOM_EQUALS_QUERY *makeAtomMinRingSizeQuery(int tgt) {
   RANGE_CHECK(3, tgt, 20);
-  ATOM_EQUALS_QUERY *res = new ATOM_EQUALS_QUERY;
+  auto *res = new ATOM_EQUALS_QUERY;
   res->setVal(tgt);
   res->setDataFunc(queryAtomMinRingSize);
   res->setDescription("AtomMinRingSize");
@@ -161,7 +161,7 @@ ATOM_EQUALS_QUERY *makeAtomMinRingSizeQuery(int tgt) {
 }
 BOND_EQUALS_QUERY *makeBondMinRingSizeQuery(int tgt) {
   RANGE_CHECK(3, tgt, 20);
-  BOND_EQUALS_QUERY *res = new BOND_EQUALS_QUERY;
+  auto *res = new BOND_EQUALS_QUERY;
   res->setVal(tgt);
   res->setDataFunc(queryBondMinRingSize);
   res->setDescription("BondMinRingSize");
@@ -338,7 +338,7 @@ ATOM_EQUALS_QUERY *makeAtomInRingQuery() {
 }
 
 ATOM_OR_QUERY *makeQAtomQuery() {
-  ATOM_OR_QUERY *res = new ATOM_OR_QUERY;
+  auto *res = new ATOM_OR_QUERY;
   res->setDescription("AtomOr");  // FIX: we really should label this more
                                   // descriptively so that it can be output more
                                   // cleanly
@@ -365,7 +365,7 @@ ATOM_EQUALS_QUERY *makeAHAtomQuery() {
 }
 
 ATOM_OR_QUERY *makeXAtomQuery() {
-  ATOM_OR_QUERY *res = new ATOM_OR_QUERY;
+  auto *res = new ATOM_OR_QUERY;
   res->setDescription("AtomOr");
   res->addChild(
       Queries::Query<int, Atom const *, true>::CHILD_TYPE(makeAtomNumQuery(9)));
@@ -401,7 +401,7 @@ ATOM_OR_QUERY *makeMHAtomQuery() {
   // SMARTS:
   // !#2!#5!#6!#7!#8!#9!#10!#14!#15!#16!#17!#18!#33!#34!#35!#36!#52!#53!#54!#85!#86
   // it's easier to define what isn't a metal than what is. :-)
-  ATOM_OR_QUERY *res = new ATOM_OR_QUERY;
+  auto *res = new ATOM_OR_QUERY;
   res->setDescription("AtomOr");
   res->setNegation(true);
   res->addChild(
@@ -463,8 +463,35 @@ ATOM_EQUALS_QUERY *makeAtomHasRingBondQuery() {
   return res;
 }
 
+ATOM_EQUALS_QUERY *makeAtomNumHeteroatomNbrsQuery(int what) {
+  ATOM_EQUALS_QUERY *res =
+      makeAtomSimpleQuery<ATOM_EQUALS_QUERY>(what, queryAtomNumHeteroatomNbrs);
+  res->setDescription("AtomNumHeteroatomNeighbors");
+  return res;
+}
+
+ATOM_EQUALS_QUERY *makeAtomHasHeteroatomNbrsQuery() {
+  ATOM_EQUALS_QUERY *res =
+      makeAtomSimpleQuery<ATOM_EQUALS_QUERY>(true, queryAtomHasHeteroatomNbrs);
+  res->setDescription("AtomHasHeteroatomNeighbors");
+  return res;
+}
+ATOM_EQUALS_QUERY *makeAtomNumAliphaticHeteroatomNbrsQuery(int what) {
+  ATOM_EQUALS_QUERY *res = makeAtomSimpleQuery<ATOM_EQUALS_QUERY>(
+      what, queryAtomNumAliphaticHeteroatomNbrs);
+  res->setDescription("AtomNumAliphaticHeteroatomNeighbors");
+  return res;
+}
+
+ATOM_EQUALS_QUERY *makeAtomHasAliphaticHeteroatomNbrsQuery() {
+  ATOM_EQUALS_QUERY *res = makeAtomSimpleQuery<ATOM_EQUALS_QUERY>(
+      true, queryAtomHasAliphaticHeteroatomNbrs);
+  res->setDescription("AtomHasAliphaticHeteroatomNeighbors");
+  return res;
+}
+
 BOND_EQUALS_QUERY *makeBondOrderEqualsQuery(Bond::BondType what) {
-  BOND_EQUALS_QUERY *res = new BOND_EQUALS_QUERY;
+  auto *res = new BOND_EQUALS_QUERY;
   res->setVal(what);
   res->setDataFunc(queryBondOrder);
   res->setDescription("BondOrder");
@@ -472,7 +499,7 @@ BOND_EQUALS_QUERY *makeBondOrderEqualsQuery(Bond::BondType what) {
 }
 
 BOND_EQUALS_QUERY *makeBondDirEqualsQuery(Bond::BondDir what) {
-  BOND_EQUALS_QUERY *res = new BOND_EQUALS_QUERY;
+  auto *res = new BOND_EQUALS_QUERY;
   res->setVal(what);
   res->setDataFunc(queryBondDir);
   res->setDescription("BondDir");
@@ -480,7 +507,7 @@ BOND_EQUALS_QUERY *makeBondDirEqualsQuery(Bond::BondDir what) {
 }
 
 BOND_EQUALS_QUERY *makeBondHasStereoQuery() {
-  BOND_EQUALS_QUERY *res = new BOND_EQUALS_QUERY;
+  auto *res = new BOND_EQUALS_QUERY;
   res->setVal(true);
   res->setDataFunc(queryBondHasStereo);
   res->setDescription("BondStereo");
@@ -488,7 +515,7 @@ BOND_EQUALS_QUERY *makeBondHasStereoQuery() {
 }
 
 BOND_EQUALS_QUERY *makeBondIsInRingQuery() {
-  BOND_EQUALS_QUERY *res = new BOND_EQUALS_QUERY;
+  auto *res = new BOND_EQUALS_QUERY;
   res->setVal(true);
   res->setDataFunc(queryIsBondInRing);
   res->setDescription("BondInRing");
@@ -496,7 +523,7 @@ BOND_EQUALS_QUERY *makeBondIsInRingQuery() {
 }
 
 BOND_EQUALS_QUERY *makeBondInNRingsQuery(int what) {
-  BOND_EQUALS_QUERY *res = new BOND_EQUALS_QUERY;
+  auto *res = new BOND_EQUALS_QUERY;
   res->setVal(what);
   res->setDataFunc(queryIsBondInNRings);
   res->setDescription("BondInNRings");
@@ -504,7 +531,7 @@ BOND_EQUALS_QUERY *makeBondInNRingsQuery(int what) {
 }
 
 BOND_NULL_QUERY *makeBondNullQuery() {
-  BOND_NULL_QUERY *res = new BOND_NULL_QUERY;
+  auto *res = new BOND_NULL_QUERY;
   res->setDataFunc(nullDataFun);
   res->setMatchFunc(nullQueryFun);
   res->setDescription("BondNull");
@@ -512,7 +539,7 @@ BOND_NULL_QUERY *makeBondNullQuery() {
 }
 
 ATOM_NULL_QUERY *makeAtomNullQuery() {
-  ATOM_NULL_QUERY *res = new ATOM_NULL_QUERY;
+  auto *res = new ATOM_NULL_QUERY;
   res->setDataFunc(nullDataFun);
   res->setMatchFunc(nullQueryFun);
   res->setDescription("AtomNull");
@@ -529,8 +556,7 @@ bool isComplexQuery(const Bond *b) {
   if (descr == "BondOr") {
     // detect the types of queries that appear for unspecified bonds in SMARTS:
     if (b->getQuery()->endChildren() - b->getQuery()->beginChildren() == 2) {
-      for (Bond::QUERYBOND_QUERY::CHILD_VECT_CI child =
-               b->getQuery()->beginChildren();
+      for (auto child = b->getQuery()->beginChildren();
            child != b->getQuery()->endChildren(); ++child) {
         if ((*child)->getDescription() != "BondOrder" ||
             (*child)->getNegation())
@@ -559,8 +585,7 @@ bool _complexQueryHelper(Atom::QUERYATOM_QUERY const *query, bool &hasAtNum) {
   }
   if (descr == "AtomOr" || descr == "AtomXor") return true;
   if (descr == "AtomAnd") {
-    Queries::Query<int, Atom const *, true>::CHILD_VECT_CI childIt =
-        query->beginChildren();
+    auto childIt = query->beginChildren();
     while (childIt != query->endChildren()) {
       if (_complexQueryHelper(childIt->get(), hasAtNum)) return true;
       ++childIt;
@@ -603,8 +628,7 @@ bool isAtomAromatic(const Atom *a) {
       res = false;
       if (a->getQuery()->getNegation()) res = !res;
     } else if (descr == "AtomAnd") {
-      Queries::Query<int, Atom const *, true>::CHILD_VECT_CI childIt =
-          a->getQuery()->beginChildren();
+      auto childIt = a->getQuery()->beginChildren();
       if ((*childIt)->getDescription() == "AtomAtomicNum") {
         if (a->getQuery()->getNegation()) {
           res = false;

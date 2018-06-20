@@ -1,6 +1,5 @@
-// $Id$
 //
-//  Copyright (C) 2003-2013 Greg Landrum and Rational Discovery LLC
+//  Copyright (C) 2003-2018 Greg Landrum and Rational Discovery LLC
 //
 //   @@ All Rights Reserved @@
 //  This file is part of the RDKit.
@@ -8,6 +7,7 @@
 //  which is included in the file license.txt, found at the root
 //  of the RDKit source tree.
 //
+#include <RDBoost/test.h>
 #include <GraphMol/RDKitBase.h>
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/SmilesParse/SmilesWrite.h>
@@ -133,7 +133,8 @@ void test2() {
 
 void testGithubIssue103() {
   std::cout << "-----------------------\n Testing github Issue103: "
-               "stereochemistry and pathToSubmol" << std::endl;
+               "stereochemistry and pathToSubmol"
+            << std::endl;
   {
     std::string smiles = "O=C(O)C(=O)C[C@@]1(C(=O)O)C=C[C@H](O)C=C1";
     RWMol *mol = SmilesToMol(smiles);
@@ -156,7 +157,7 @@ void testGithubIssue103() {
     TEST_ASSERT(pth.size() == 5);
     ROMol *frag = Subgraphs::pathToSubmol(*mol, pth, false);
     smiles = MolToSmarts(*frag);
-    TEST_ASSERT(smiles == "[#6](-[#6H](-[#8])-[#6]=[#6])=[#6]");
+    TEST_ASSERT(smiles == "[#6](-[#6@H](-[#8])-[#6]=[#6])=[#6]");
     delete frag;
     delete mol;
   }
@@ -169,7 +170,7 @@ void testGithubIssue103() {
     TEST_ASSERT(pth.size() == 5);
     ROMol *frag = Subgraphs::pathToSubmol(*mol, pth, true);
     smiles = MolToSmarts(*frag);
-    TEST_ASSERT(smiles == "[#6](-[#6](-[#8])-[#6]=[#6])=[#6]");
+    TEST_ASSERT(smiles == "[#6](-[#6@](-[#8])-[#6]=[#6])=[#6]");
     delete frag;
     delete mol;
   }
