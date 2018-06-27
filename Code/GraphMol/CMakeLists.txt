@@ -97,8 +97,6 @@ endif()
 
 add_subdirectory(Wrap)
 
-add_subdirectory(MolStandardize)
-
 rdkit_test(graphmolTest1 test1.cpp LINK_LIBRARIES FileParsers SmilesParse GraphMol
 RDGeometryLib RDGeneral SubstructMatch ForceFieldHelpers ForceField)
 
