@@ -246,5 +246,5 @@ std::vector<std::pair<unsigned int, unsigned int>> pairwise(const std::vector<in
 	return pvect;
 }
 
-} // namespace MolStandardize
-} // namespace RDKit
+}  // namespace MolStandardize
+}  // namespace RDKit
