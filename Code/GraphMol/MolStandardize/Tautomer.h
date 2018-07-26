@@ -59,7 +59,7 @@ class TautomerEnumerator {
 };  // TautomerEnumerator class
 
 std::vector<std::pair<unsigned int, unsigned int>> pairwise(
-    const std::vector<unsigned int> vect);
+    const std::vector<int> vect);
 }  // namespace MolStandardize
 }  // namespace RDKit
 
