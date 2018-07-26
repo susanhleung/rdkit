@@ -39,7 +39,7 @@ class TautomerEnumerator {
   //			std::string Smiles;
   //			boost::shared_ptr<ROMol> Mol;
   //			Tautomer(std::string smiles, boost::shared_ptr<ROMol>
-  //mol) 				: Smiles(smiles), Mol(mol) {}
+  // mol) 				: Smiles(smiles), Mol(mol) {}
   //
   //			// sorting products alphabetically by SMILES
   //			bool operator < (const Tautomer &tautomer) const {
