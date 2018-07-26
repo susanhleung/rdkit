@@ -10,7 +10,7 @@ void test1() {
   std::string rdbase = getenv("RDBASE");
   std::string tautomerFile = rdbase +
                              "/Code/GraphMol/MolStandardize/TautomerCatalog/"
-                             "test_data/tautomerTransforms.in";
+                             "data/tautomerTransforms.in";
   auto *tautparams = new TautomerCatalogParams(tautomerFile);
   unsigned int ntautomers = tautparams->getNumTautomers();
   TEST_ASSERT(ntautomers == 34);
